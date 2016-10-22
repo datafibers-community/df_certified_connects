@@ -1,0 +1,52 @@
+#!/bin/sh
+#
+#	usage: $0 [ Sink | Source | SinkAvro | SourceAvro ]
+#		default is BOTH connectors deployed, enabling a "loop test"
+#		Avro suffix enables the Avro data converter (default is JSON)
+
+use_avro=0
+TEST_TYPE=${1}
+if [ "${TEST_TYPE%Avro}" != "${TEST_TYPE}" ] ; then
+	use_avro=1
+	TEST_TYPE="${TEST_TYPE%Avro}"
+fi
+
+READLINK=readlink
+which greadlink &> /dev/null  &&  READLINK=greadlink
+
+THIS_SCRIPT="$(${READLINK} -f ${BASH_SOURCE[0]})"
+DEV_DIR=$(dirname ${THIS_SCRIPT})
+CFG_DIR=${DEV_DIR}/config
+
+CP_HOME=${CP_HOME:-/opt/confluent}
+export CLASSPATH=${DEV_DIR}/target/SchemaedFile-1.0-SNAPSHOT-package/share/java/SchemaedFile/\*
+
+if [ -n "${TEST_TYPE}"  -a  ! -r ${CFG_DIR}/File${TEST_TYPE}-quickstart.properties ] ; then
+	echo "ERROR: cannot access ${CFG_DIR}/File${TEST_TYPE}-quickstart.properties"
+	echo "Supported types are:"
+	ls ${CFG_DIR}/*-quickstart.properties | \
+		sed "s|${CFG_DIR}/File||g" | \
+		sed "s|-quickstart.properties||g" 
+	exit 1
+fi
+
+if [ -f ${CFG_DIR}/file-log4j.properties ] ; then
+    KAFKA_LOG4J_OPTS="-Dlog4j.configuration=file:${CFG_DIR}/file-log4j.properties"
+	export KAFKA_LOG4J_OPTS
+fi
+
+if [ "${TEST_TYPE}" == "Sink"  -o  "${TEST_TYPE}" == "Source" ] ; then
+	QS_PROPS=$CFG_DIR/File${TEST_TYPE}-quickstart.properties
+else
+	QS_PROPS="$CFG_DIR/FileSink-quickstart.properties ${CFG_DIR}/FileSource-quickstart.properties"
+fi
+
+if [ $use_avro -eq 1 ] ; then
+	SA_PROPS=$CP_HOME/etc/schema-registry/connect-avro-standalone.properties
+else
+	SA_PROPS=$CP_HOME/etc/kafka/connect-standalone.properties
+fi
+
+$CP_HOME/bin/connect-standalone \
+	$SA_PROPS \
+	$QS_PROPS

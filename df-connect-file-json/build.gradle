@@ -1,0 +1,40 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+
+repositories {
+//	mavenLocal()
+	maven { url "http://packages.confluent.io/maven/" }
+    mavenCentral()
+}
+
+dependencies {
+	
+	compile "org.apache.kafka:connect-api:0.10.+"
+    compile "org.slf4j:slf4j-api:1.7.6"
+  	compile "org.apache.avro:avro:1.7.7"
+		
+	runtime "io.confluent:common-config:3.+"
+	runtime "commons-logging:commons-logging:1.2"
+    runtime "org.apache.kafka:connect-runtime:0.10.+"
+	runtime "org.codehaus.jackson:jackson-core-asl:1.9.13"
+	runtime "org.codehaus.jackson:jackson-mapper-asl:1.9.13"
+	runtime "io.confluent:kafka-avro-serializer:3.+"
+	runtime "io.confluent:kafka-connect-avro-converter:3.+"
+	runtime "io.confluent:kafka-schema-registry-client:3.+"
+		
+}
+
+task clearOld(type: Delete){
+	delete "build"
+}
+
+task copyRuntimeLibs(type: Copy) {
+    into "build/libs"
+    from configurations.runtime
+}
+
+task installWithDeps(dependsOn: ['clearOld', 'install', 'copyRuntimeLibs'])
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.0'
+}
