@@ -13,7 +13,7 @@
  * the License.
  **/
 
-package io.notch.connect.source.avro;
+package com.datafibers.kafka.connect;
 
 import java.io.BufferedReader;
 import java.io.IOException;

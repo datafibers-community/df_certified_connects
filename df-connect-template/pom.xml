@@ -9,11 +9,11 @@
     </parent>
 
     <groupId>com.datafibers</groupId>
-    <artifactId>df-connect-file-schemaed</artifactId>
+    <artifactId>df-connect-template</artifactId>
     <version>${df.version}</version>
     <packaging>jar</packaging>
 
-    <name>df-connect-file-schemaed</name>
+    <name>df-connect-template</name>
 
     <dependencies>
         <dependency>
@@ -22,16 +22,6 @@
             <version>${kafka.version}</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-          <groupId>com.fasterxml.jackson.core</groupId>
-          <artifactId>jackson-databind</artifactId>
-          <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>com.fasterxml.jackson.dataformat</groupId>
-          <artifactId>jackson-dataformat-csv</artifactId>
-          <version>${jackson.version}</version>
-          </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

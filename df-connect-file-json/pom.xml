@@ -9,17 +9,23 @@
     </parent>
 
     <groupId>com.datafibers</groupId>
-    <artifactId>df-connect-file-schemaed</artifactId>
+    <artifactId>df-connect-file-json</artifactId>
     <version>${df.version}</version>
     <packaging>jar</packaging>
 
-    <name>df-connect-file-schemaed</name>
+    <name>df-connect-file-json</name>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>connect-api</artifactId>
             <version>${kafka.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+            <version>${avro.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

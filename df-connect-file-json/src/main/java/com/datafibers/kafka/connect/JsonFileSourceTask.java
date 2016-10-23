@@ -13,7 +13,7 @@
  * the License.
  **/
 
-package io.notch.connect.source.avro;
+package com.datafibers.kafka.connect;
 
 import static org.apache.avro.Schema.Type.NULL;
 import static org.apache.avro.Schema.Type.RECORD;
@@ -211,7 +211,7 @@ public class JsonFileSourceTask extends SourceTask {
     }
 
     ArrayList<SourceRecord> records = new ArrayList<SourceRecord>();
-    StringBuilder fileContent = new StringBuilder();
+    //StringBuilder fileContent = new StringBuilder();
 
     try {
       final BufferedReader readerCopy;
@@ -240,8 +240,12 @@ public class JsonFileSourceTask extends SourceTask {
             if (line != null) {
               line = line.trim();
               log.trace("Read a line from {}", filename);
-              fileContent.append(line);
+              if (records == null)
+                records = new ArrayList<>();
+              records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
+                      dataSchema, structEncoding(line)));
             }
+            new ArrayList<SourceRecord>();
           } while (line != null);
         }
       }
@@ -251,52 +255,58 @@ public class JsonFileSourceTask extends SourceTask {
           this.wait(1000);
         }
 
+      return records;
+
     } catch (IOException e) {
       throw new ConnectException(String.format("Unable to read file %", filename), e);
     }
+    return null;
 
-    if (fileContent.length() > 0) {
+  }
+
+  public Struct structEncoding(String line){
+
+    if (line > 0) {
       JsonNode json = null;
       try {
-        json = new ObjectMapper().readValue(fileContent.toString(), JsonNode.class);
+        json = new ObjectMapper().readValue(line, JsonNode.class);
       } catch (IOException ex) {
         throw new ConnectException(String.format("Unable to parse %s into a valid JSON", filename),
-            ex);
+                ex);
       }
 
-      Struct struct = new Struct(dataSchema);
-      Iterator<Entry<String, JsonNode>> iterator = json.getFields();
-      while (iterator.hasNext()) {
-        Entry<String, JsonNode> entry = iterator.next();
-        Object value = null;
-        org.apache.kafka.connect.data.Field theField = dataSchema.field(entry.getKey());
-        if (theField != null) {
-          switch (theField.schema().type()) {
-            case STRING: {
-              value = entry.getValue().asText();
-              break;
-            }
-            case INT32: {
-              value = entry.getValue().asInt();
-              break;
-            }
-            case BOOLEAN: {
-              value = entry.getValue().asBoolean();
-              break;
-            }
-            default:
-              value = entry.getValue().asText();
+    Struct struct = new Struct(dataSchema);
+    Iterator<Entry<String, JsonNode>> iterator = json.getFields();
+    while (iterator.hasNext()) {
+      Entry<String, JsonNode> entry = iterator.next();
+      Object value = null;
+      org.apache.kafka.connect.data.Field theField = dataSchema.field(entry.getKey());
+      if (theField != null) {
+        switch (theField.schema().type()) {
+          case STRING: {
+            value = entry.getValue().asText();
+            break;
           }
+          case INT32: {
+            value = entry.getValue().asInt();
+            break;
+          }
+          case BOOLEAN: {
+            value = entry.getValue().asBoolean();
+            break;
+          }
+          default:
+            value = entry.getValue().asText();
         }
-        struct.put(entry.getKey(), value);
-
       }
+      struct.put(entry.getKey(), value);
 
-      records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
-          dataSchema, struct));
     }
 
-    return records;
+    return struct;
+  }
+
+  return null;
 
   }
 

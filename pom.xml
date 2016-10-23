@@ -1,26 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.datafibers</groupId>
-  <artifactId>df-certified-connects</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <packaging>pom</packaging>
-  <modules>
-      <module>df-connect-json-file</module>
-      <module>df-connect-template</module>
-  </modules>
-  
-   <build>
-      <plugins>
-        <!-- We specify the Maven compiler plugin as we need to set it to Java 1.8 -->
-	        <plugin>
-	          <artifactId>maven-compiler-plugin</artifactId>
-	          <version>3.1</version>
-	          <configuration>
-	            <source>1.8</source>
-	            <target>1.8</target>
-	          </configuration>
-	        </plugin>
-        </plugins> 
-  	</build>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.datafibers</groupId>
+    <artifactId>df-certified-connects</artifactId>
+    <version>${df.version}</version>
+    <packaging>pom</packaging>
+    <modules>
+        <module>df-connect-file-json</module>
+        <module>df-connect-template</module>
+        <module>df-connect-file-schemaed</module>
+    </modules>
+
+    <properties>
+        <df.version>0.0.1-SNAPSHOT</df.version>
+        <confluent.version>3.0.1</confluent.version>
+        <kafka.version>0.10.0.1</kafka.version>
+        <jackson.version>2.7.0</jackson.version>
+        <junit.version>4.12</junit.version>
+        <maven-compiler-plugin.version>3.1</maven-compiler-plugin.version>
+
+        <avro.version>1.7.7</avro.version>
+        <mongodbclient.version>3.3.2</mongodbclient.version>
+    </properties>
+
+    <build>
+        <plugins>
+            <!-- We specify the Maven compiler plugin as we need to set it to Java 1.8 -->
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
