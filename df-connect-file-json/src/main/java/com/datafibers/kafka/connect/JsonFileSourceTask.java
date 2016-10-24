@@ -260,13 +260,12 @@ public class JsonFileSourceTask extends SourceTask {
     } catch (IOException e) {
       throw new ConnectException(String.format("Unable to read file %", filename), e);
     }
-    return null;
 
   }
 
   public Struct structEncoding(String line){
 
-    if (line > 0) {
+    if (line.length() > 0) {
       JsonNode json = null;
       try {
         json = new ObjectMapper().readValue(line, JsonNode.class);

@@ -1,0 +1,4 @@
+com/datafibers/kafka/connect/JsonFileSourceTask.class
+com/datafibers/kafka/connect/JsonFileSourceTask$1.class
+com/datafibers/kafka/connect/JsonFileSourceConnector.class
+com/datafibers/kafka/connect/JsonFileSourceTask$2.class
