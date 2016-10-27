@@ -36,8 +36,8 @@ import org.codehaus.jackson.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JsonFileSourceConnector extends SourceConnector {
-	private static final Logger log = LoggerFactory.getLogger(JsonFileSourceConnector.class);
+public class FileGenericSourceConnector extends SourceConnector {
+	private static final Logger log = LoggerFactory.getLogger(FileGenericSourceConnector.class);
 
 	public static final String TOPIC_CONFIG = "topic";
 	public static final String FILE_LOCATION_CONFIG = "file.location";
@@ -52,14 +52,11 @@ public class JsonFileSourceConnector extends SourceConnector {
 			.define(TOPIC_CONFIG, Type.STRING, Importance.HIGH, "The topic to publish data to")
 			.define(FILE_LOCATION_CONFIG, Type.STRING, Importance.HIGH, "The location of the file(s) to process.")
 			.define(FILE_GLOB_CONFIG, Type.STRING, Importance.HIGH, "The glob criteria.")
-			.define(FILE_INTERVAL_CONFIG, Type.STRING, Importance.MEDIUM,
-					"How often to check for new file(s) to be processed.")
-			.define(FILE_OVERWRITE_CONFIG, Type.STRING, Importance.MEDIUM,
-					"If a file is modified should it be republished to kafka?")
+			.define(FILE_INTERVAL_CONFIG, Type.STRING, Importance.MEDIUM, "How often to check for new file(s) to be processed.")
+			.define(FILE_OVERWRITE_CONFIG, Type.STRING, Importance.MEDIUM,"If a file is modified should it be republished to kafka?")
 			.define(SCHEMA_URI_CONFIG, Type.STRING, Importance.HIGH, "The URI to the Schema Registry.")
 			.define(SCHEMA_SUBJECT_CONFIG, Type.STRING, Importance.MEDIUM, "The subject used to validate avro schema.")
-			.define(SCHEMA_VERSION_CONFIG, Type.STRING, Importance.MEDIUM,
-					"The version of the subject to be used for schema validation.");
+			.define(SCHEMA_VERSION_CONFIG, Type.STRING, Importance.MEDIUM, "The version of the subject to be used for schema validation.");
 
 	private String topic;
 	private String fileLocation;
@@ -87,14 +84,13 @@ public class JsonFileSourceConnector extends SourceConnector {
 		schemaVersion = props.get(SCHEMA_VERSION_CONFIG);
 
 		if (topic == null || topic.isEmpty())
-			throw new ConnectException("JsonFileSourceConnector configuration must include 'topic' setting");
+			throw new ConnectException("FileGenericSourceConnector configuration must include 'topic' setting");
 		if (topic.contains(","))
-			throw new ConnectException(
-					"JsonFileSourceConnector should only have a single topic when used as a source.");
+			throw new ConnectException("FileGenericSourceConnector should only have a single topic when used as a source.");
 		if (fileLocation == null || fileLocation.isEmpty())
-			throw new ConnectException("JsonFileSourceConnector configuration must include 'file.location' setting");
+			throw new ConnectException("FileGenericSourceConnector configuration must include 'file.location' setting");
 		if (fileGlob == null || fileGlob.isEmpty())
-			throw new ConnectException("JsonFileSourceConnector configuration must include 'file.glob' setting");
+			throw new ConnectException("FileGenericSourceConnector configuration must include 'file.glob' setting");
 		if (fileInterval != null && !fileInterval.isEmpty()) {
 			try {
 				Integer.parseInt(fileInterval);
@@ -103,9 +99,7 @@ public class JsonFileSourceConnector extends SourceConnector {
 			}
 		}
 		if (schemaUri == null || schemaUri.isEmpty())
-			throw new ConnectException(
-					"JsonFileSourceConnector configuration must include 'schema.registry.url' setting");
-
+			throw new ConnectException("FileGenericSourceConnector configuration must include 'schema.registry.url' setting");
 		if (fileInterval == null || fileInterval.isEmpty())
 			fileInterval = "10";
 		if (fileOverwrite == null || fileOverwrite.isEmpty())
@@ -120,7 +114,7 @@ public class JsonFileSourceConnector extends SourceConnector {
 
 	@Override
 	public Class<? extends Task> taskClass() {
-		return JsonFileSourceTask.class;
+		return FileGenericSourceTask.class;
 	}
 
 	@Override
@@ -134,7 +128,7 @@ public class JsonFileSourceConnector extends SourceConnector {
 		config.put(SCHEMA_URI_CONFIG, schemaUri);
 		config.put(SCHEMA_SUBJECT_CONFIG, schemaSubject);
 		config.put(SCHEMA_VERSION_CONFIG, schemaVersion);
-		log.info("JsonFileSourceConnector valuez: {}", getValues(config));
+		log.info("FileGenericSourceConnector value: {}", getValues(config));
 		return Arrays.asList(config);
 	}
 

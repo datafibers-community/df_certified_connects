@@ -18,12 +18,7 @@ package com.datafibers.kafka.connect;
 import static org.apache.avro.Schema.Type.NULL;
 import static org.apache.avro.Schema.Type.RECORD;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
@@ -33,17 +28,17 @@ import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Parser;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.SchemaParseException;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
@@ -56,8 +51,8 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JsonFileSourceTask extends SourceTask {
-  private static final Logger log = LoggerFactory.getLogger(JsonFileSourceTask.class);
+public class FileGenericSourceTask extends SourceTask {
+  private static final Logger log = LoggerFactory.getLogger(FileGenericSourceTask.class);
   public static final String FILENAME_FIELD = "filename";
   public static final String POSITION_FIELD = "position";
 
@@ -86,19 +81,19 @@ public class JsonFileSourceTask extends SourceTask {
 
   @Override
   public void start(Map<String, String> props) {
-    topic = props.get(JsonFileSourceConnector.TOPIC_CONFIG);
-    location = props.get(JsonFileSourceConnector.FILE_LOCATION_CONFIG);
-    glob = props.get(JsonFileSourceConnector.FILE_LOCATION_CONFIG)
-        .concat(props.get(JsonFileSourceConnector.FILE_GLOB_CONFIG));
-    interval = Integer.parseInt(props.get(JsonFileSourceConnector.FILE_INTERVAL_CONFIG)) * 1000;
-    overwrite = Boolean.valueOf(props.get(JsonFileSourceConnector.FILE_OVERWRITE_CONFIG));
+    topic = props.get(FileGenericSourceConnector.TOPIC_CONFIG);
+    location = props.get(FileGenericSourceConnector.FILE_LOCATION_CONFIG);
+    glob = props.get(FileGenericSourceConnector.FILE_LOCATION_CONFIG)
+        .concat(props.get(FileGenericSourceConnector.FILE_GLOB_CONFIG));
+    interval = Integer.parseInt(props.get(FileGenericSourceConnector.FILE_INTERVAL_CONFIG)) * 1000;
+    overwrite = Boolean.valueOf(props.get(FileGenericSourceConnector.FILE_OVERWRITE_CONFIG));
 
     findMatch();
 
     // Get avro schema from registry and build proper schema POJO from it
-    String schemaUri = props.get(JsonFileSourceConnector.SCHEMA_URI_CONFIG);
-    String schemaSubject = props.get(JsonFileSourceConnector.SCHEMA_SUBJECT_CONFIG);
-    String schemaVersion = props.get(JsonFileSourceConnector.SCHEMA_VERSION_CONFIG);
+    String schemaUri = props.get(FileGenericSourceConnector.SCHEMA_URI_CONFIG);
+    String schemaSubject = props.get(FileGenericSourceConnector.SCHEMA_SUBJECT_CONFIG);
+    String schemaVersion = props.get(FileGenericSourceConnector.SCHEMA_VERSION_CONFIG);
     String fullUrl =
         String.format("%s/subjects/%s/versions/%s", schemaUri, schemaSubject, schemaVersion);
 
@@ -114,6 +109,7 @@ public class JsonFileSourceTask extends SourceTask {
 
       JsonNode responseJson = new ObjectMapper().readValue(response.toString(), JsonNode.class);
       schemaString = responseJson.get("schema").asText();
+      log.info("Schem String is " + schemaString);
     } catch (Exception ex) {
       throw new ConnectException("Unable to retrieve schema from Schema Registry", ex);
     } finally {
@@ -175,8 +171,7 @@ public class JsonFileSourceTask extends SourceTask {
       }
     }
 
-    dataSchema = builder.build();
-
+      dataSchema = builder.build();
   }
 
   @Override
@@ -242,8 +237,12 @@ public class JsonFileSourceTask extends SourceTask {
               log.trace("Read a line from {}", filename);
               if (records == null)
                 records = new ArrayList<>();
-              records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
-                      dataSchema, structEncoding(line)));
+/*                records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
+                      dataSchema, structDecodingRoute(line, filename)));*/
+
+                records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
+
+                        dataSchema, structDecodingRoute(line, filename)));
             }
             new ArrayList<SourceRecord>();
           } while (line != null);
@@ -263,52 +262,6 @@ public class JsonFileSourceTask extends SourceTask {
 
   }
 
-  public Struct structEncoding(String line){
-
-    if (line.length() > 0) {
-      JsonNode json = null;
-      try {
-        json = new ObjectMapper().readValue(line, JsonNode.class);
-      } catch (IOException ex) {
-        throw new ConnectException(String.format("Unable to parse %s into a valid JSON", filename),
-                ex);
-      }
-
-    Struct struct = new Struct(dataSchema);
-    Iterator<Entry<String, JsonNode>> iterator = json.getFields();
-    while (iterator.hasNext()) {
-      Entry<String, JsonNode> entry = iterator.next();
-      Object value = null;
-      org.apache.kafka.connect.data.Field theField = dataSchema.field(entry.getKey());
-      if (theField != null) {
-        switch (theField.schema().type()) {
-          case STRING: {
-            value = entry.getValue().asText();
-            break;
-          }
-          case INT32: {
-            value = entry.getValue().asInt();
-            break;
-          }
-          case BOOLEAN: {
-            value = entry.getValue().asBoolean();
-            break;
-          }
-          default:
-            value = entry.getValue().asText();
-        }
-      }
-      struct.put(entry.getKey(), value);
-
-    }
-
-    return struct;
-  }
-
-  return null;
-
-  }
-
   @Override
   public void stop() {
     log.trace("Stopping");
@@ -319,7 +272,7 @@ public class JsonFileSourceTask extends SourceTask {
           log.trace("Closed input stream");
         }
       } catch (IOException e) {
-        log.error("Failed to close JsonFileSourceTask stream: ", e);
+        log.error("Failed to close FileGenericSourceTask stream: ", e);
       }
       this.notify();
     }
@@ -432,4 +385,129 @@ public class JsonFileSourceTask extends SourceTask {
     return Collections.singletonMap(POSITION_FIELD, pos);
   }
 
+    /**
+     * Decode Csv to struct according to schema form Confluent schema registry
+     * @param line
+     * @return struct of decoded
+     */
+    public Struct structDecodingRoute(String line, String file_name){
+        Struct st = null;
+        switch (FilenameUtils.getExtension(file_name).toLowerCase()) {
+            case "json":
+                log.info("Read line @@" + line + "@@ from Json File " + file_name);
+                st = structDecodingFromJson(line);
+                break;
+            case "csv":
+            case "tsv":
+                log.info("Read line @@" + line + "@@ from Csv File " + file_name);
+                st = structDecodingFromCsv(line);
+                break;
+            default:
+                log.info("Default file extension not processing");
+        }
+        return st;
+    }
+  /**
+   * Decode Json to struct according to schema form Confluent schema registry
+   * @param line
+   * @return struct of decoded
+   */
+  public Struct structDecodingFromJson(String line) {
+
+      if (line.length() > 0) {
+          JsonNode json = null;
+          try {
+              json = new ObjectMapper().readValue(line, JsonNode.class);
+          } catch (IOException ex) {
+              throw new ConnectException(String.format("Unable to parse %s into a valid JSON", filename),
+                      ex);
+          }
+
+          Struct struct = new Struct(dataSchema);
+          Iterator<Entry<String, JsonNode>> iterator = json.getFields();
+          while (iterator.hasNext()) {
+              Entry<String, JsonNode> entry = iterator.next();
+              Object value = null;
+              org.apache.kafka.connect.data.Field theField = dataSchema.field(entry.getKey());
+              if (theField != null) {
+                  switch (theField.schema().type()) {
+                      case STRING: {
+                          value = entry.getValue().asText();
+                          break;
+                      }
+                      case INT32: {
+                          value = entry.getValue().asInt();
+                          break;
+                      }
+                      case BOOLEAN: {
+                          value = entry.getValue().asBoolean();
+                          break;
+                      }
+                      default:
+                          value = entry.getValue().asText();
+                  }
+              }
+              struct.put(entry.getKey(), value);
+
+          }
+          return struct;
+      }
+      return null;
+  }
+
+  /**
+   * Decode Csv to struct according to schema form Confluent schema registry
+   * @param line
+   * @return struct of decoded
+   */
+  public Struct structDecodingFromCsv(String line){
+      if (line.length() > 0) {
+          Struct struct = new Struct(dataSchema);
+          JsonNode json = null;
+          try {
+              // TODO support other type of files fro here
+              CSVParser csvParser = CSVFormat.EXCEL
+                              .withIgnoreEmptyLines()
+                              .withIgnoreHeaderCase()
+                              .withRecordSeparator('\n').withQuote('"')
+                              .withEscape('\\').withDelimiter(',').withTrim()
+                              .parse(new StringReader(line));
+
+              // Since this is single line parser, we get element 0 only
+              CSVRecord entry = csvParser.getRecords().get(0);
+              List<org.apache.kafka.connect.data.Field> fields =  dataSchema.fields();
+              int schema_fields_size = fields.size();
+              log.info("schema_fields_size = " + schema_fields_size);
+
+              for(int index = 0; index <= schema_fields_size - 1; index ++) {
+                  Object value = null;
+                  org.apache.kafka.connect.data.Field theField = fields.get(index);
+                  log.info("printed indexed " + index + " fields: " + theField.name() + ":" + theField.schema().type());
+                  if (theField != null) {
+                      switch (theField.schema().type()) {
+                          case STRING: {
+                              value = entry.get(index);
+                              break;
+                          }
+                          case INT32: {
+                              value = Integer.parseInt(entry.get(index));
+                              break;
+                          }
+                          case BOOLEAN: {
+                              value = Boolean.parseBoolean(entry.get(index));
+                              break;
+                          }
+                          default:
+                              value = entry.get(index);
+                      }
+                  }
+                  struct.put(theField.name(), value);
+              }
+          } catch (IOException ex) {
+        throw new ConnectException(String.format("Unable to parse %s into a valid CSV", filename), ex);
+      }
+      return struct;
+    }
+    return null;
+  }
 }

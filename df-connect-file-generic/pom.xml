@@ -9,11 +9,11 @@
     </parent>
 
     <groupId>com.datafibers</groupId>
-    <artifactId>df-connect-file-json</artifactId>
+    <artifactId>df-connect-file-generic</artifactId>
     <version>${df.version}</version>
     <packaging>jar</packaging>
 
-    <name>df-connect-file-json</name>
+    <name>df-connect-file-generic</name>
 
     <dependencies>
         <dependency>
@@ -44,6 +44,17 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>${common.csv.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${common.io.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>

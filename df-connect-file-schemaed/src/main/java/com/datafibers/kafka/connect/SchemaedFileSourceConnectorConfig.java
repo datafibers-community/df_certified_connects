@@ -59,20 +59,13 @@ public class SchemaedFileSourceConnectorConfig extends AbstractConfig {
   }
 
   private static final ConfigDef myConfigDef = new ConfigDef()
-      .define(CfgKeys.TOPIC, ConfigDef.Type.STRING, "",
-         ConfigDef.Importance.HIGH, CfgTips.TOPIC)
-      .define(CfgKeys.FILE, ConfigDef.Type.STRING, "",
-         ConfigDef.Importance.HIGH, CfgTips.FILE) 
-      .define(CfgKeys.INPUT_TYPE, ConfigDef.Type.STRING, "json",
-         ConfigDef.Importance.HIGH, CfgTips.INPUT_TYPE)
-      .define(CfgKeys.CSV_HEADERS, ConfigDef.Type.BOOLEAN, true,
-         ConfigDef.Importance.LOW, CfgTips.CSV_HEADERS)
-      .define(CfgKeys.EXCEPTION_ON_EOF, ConfigDef.Type.BOOLEAN, false,
-         ConfigDef.Importance.LOW, CfgTips.EXCEPTION_ON_EOF)
-      .define(CfgKeys.REPUBLISH_ALL_DATA, ConfigDef.Type.BOOLEAN, false,
-         ConfigDef.Importance.LOW, CfgTips.REPUBLISH_ALL_DATA)
-      .define(CfgKeys.PUBLISH_RATE, ConfigDef.Type.INT, 1000,
-         ConfigDef.Importance.HIGH, CfgTips.PUBLISH_RATE) ;
+      .define(CfgKeys.TOPIC, ConfigDef.Type.STRING, "", ConfigDef.Importance.HIGH, CfgTips.TOPIC)
+      .define(CfgKeys.FILE, ConfigDef.Type.STRING, "", ConfigDef.Importance.HIGH, CfgTips.FILE)
+      .define(CfgKeys.INPUT_TYPE, ConfigDef.Type.STRING, "json", ConfigDef.Importance.HIGH, CfgTips.INPUT_TYPE)
+      .define(CfgKeys.CSV_HEADERS, ConfigDef.Type.BOOLEAN, true, ConfigDef.Importance.LOW, CfgTips.CSV_HEADERS)
+      .define(CfgKeys.EXCEPTION_ON_EOF, ConfigDef.Type.BOOLEAN, false, ConfigDef.Importance.LOW, CfgTips.EXCEPTION_ON_EOF)
+      .define(CfgKeys.REPUBLISH_ALL_DATA, ConfigDef.Type.BOOLEAN, false, ConfigDef.Importance.LOW, CfgTips.REPUBLISH_ALL_DATA)
+      .define(CfgKeys.PUBLISH_RATE, ConfigDef.Type.INT, 1000, ConfigDef.Importance.HIGH, CfgTips.PUBLISH_RATE) ;
 
     private String localInputType = null;
 

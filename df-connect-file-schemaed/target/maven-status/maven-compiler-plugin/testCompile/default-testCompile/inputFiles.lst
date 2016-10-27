@@ -1,6 +1,6 @@
-/Users/will/Documents/Coding/GitHub/df_certified_connects/df-connect-file-schemaed/src/test/java/com/datafibers/kafka/connect/SchemaedFileSinkConnectorTest.java
-/Users/will/Documents/Coding/GitHub/df_certified_connects/df-connect-file-schemaed/src/test/java/com/datafibers/kafka/connect/SchemaedFileSourceTaskTest.java
-/Users/will/Documents/Coding/GitHub/df_certified_connects/df-connect-file-schemaed/src/test/java/com/datafibers/kafka/connect/SchemaedFileSinkTaskTest.java
-/Users/will/Documents/Coding/GitHub/df_certified_connects/df-connect-file-schemaed/src/test/java/com/datafibers/kafka/connect/SchemaedFileSourceConnectorTest.java
-/Users/will/Documents/Coding/GitHub/df_certified_connects/df-connect-file-schemaed/src/test/java/com/datafibers/kafka/connect/SchemaedFileSinkConnectorConfigTest.java
-/Users/will/Documents/Coding/GitHub/df_certified_connects/df-connect-file-schemaed/src/test/java/com/datafibers/kafka/connect/SchemaedFileSourceConnectorConfigTest.java
+C:\Users\duw3\IdeaProjects\df_certified_connects\df-connect-file-schemaed\src\test\java\com\datafibers\kafka\connect\SchemaedFileSinkConnectorConfigTest.java
+C:\Users\duw3\IdeaProjects\df_certified_connects\df-connect-file-schemaed\src\test\java\com\datafibers\kafka\connect\SchemaedFileSinkConnectorTest.java
+C:\Users\duw3\IdeaProjects\df_certified_connects\df-connect-file-schemaed\src\test\java\com\datafibers\kafka\connect\SchemaedFileSourceConnectorTest.java
+C:\Users\duw3\IdeaProjects\df_certified_connects\df-connect-file-schemaed\src\test\java\com\datafibers\kafka\connect\SchemaedFileSinkTaskTest.java
+C:\Users\duw3\IdeaProjects\df_certified_connects\df-connect-file-schemaed\src\test\java\com\datafibers\kafka\connect\SchemaedFileSourceTaskTest.java
+C:\Users\duw3\IdeaProjects\df_certified_connects\df-connect-file-schemaed\src\test\java\com\datafibers\kafka\connect\SchemaedFileSourceConnectorConfigTest.java
