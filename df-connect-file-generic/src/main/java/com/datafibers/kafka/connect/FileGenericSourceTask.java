@@ -61,6 +61,7 @@ public class FileGenericSourceTask extends SourceTask {
   private String glob;
   private int interval;
   private boolean overwrite;
+  private boolean schemaValidate;
   private Schema dataSchema;
 
   private List<Path> processedPaths = new ArrayList<Path>();
@@ -89,89 +90,98 @@ public class FileGenericSourceTask extends SourceTask {
     overwrite = Boolean.valueOf(props.get(FileGenericSourceConnector.FILE_OVERWRITE_CONFIG));
 
     findMatch();
-
-    // Get avro schema from registry and build proper schema POJO from it
     String schemaUri = props.get(FileGenericSourceConnector.SCHEMA_URI_CONFIG);
-    String schemaSubject = props.get(FileGenericSourceConnector.SCHEMA_SUBJECT_CONFIG);
-    String schemaVersion = props.get(FileGenericSourceConnector.SCHEMA_VERSION_CONFIG);
-    String fullUrl =
-        String.format("%s/subjects/%s/versions/%s", schemaUri, schemaSubject, schemaVersion);
+    String schemaIgnored = props.get(FileGenericSourceConnector.SCHEMA_IGNORED);
 
-    String schemaString = null;
-    BufferedReader br = null;
-    try {
-      StringBuilder response = new StringBuilder();
-      String line;
-      br = new BufferedReader(new InputStreamReader(new URL(fullUrl).openStream()));
-      while ((line = br.readLine()) != null) {
-        response.append(line);
-      }
+    if (schemaIgnored.equalsIgnoreCase("true")) {
+        schemaValidate = false;
 
-      JsonNode responseJson = new ObjectMapper().readValue(response.toString(), JsonNode.class);
-      schemaString = responseJson.get("schema").asText();
-      log.info("Schem String is " + schemaString);
-    } catch (Exception ex) {
-      throw new ConnectException("Unable to retrieve schema from Schema Registry", ex);
-    } finally {
-      try {
-        if (br != null)
-          br.close();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+    } else {
+        // Get avro schema from registry and build proper schema POJO from it
+        schemaValidate = true;
+        String schemaSubject = props.get(FileGenericSourceConnector.SCHEMA_SUBJECT_CONFIG);
+        String schemaVersion = props.get(FileGenericSourceConnector.SCHEMA_VERSION_CONFIG);
+        String fullUrl =
+                String.format("%s/subjects/%s/versions/%s", schemaUri, schemaSubject, schemaVersion);
+
+        String schemaString = null;
+        BufferedReader br = null;
+        try {
+            StringBuilder response = new StringBuilder();
+            String line;
+            br = new BufferedReader(new InputStreamReader(new URL(fullUrl).openStream()));
+            while ((line = br.readLine()) != null) {
+                response.append(line);
+            }
+
+            JsonNode responseJson = new ObjectMapper().readValue(response.toString(), JsonNode.class);
+            schemaString = responseJson.get("schema").asText();
+            log.info("Schem String is " + schemaString);
+        } catch (Exception ex) {
+            throw new ConnectException("Unable to retrieve schema from Schema Registry", ex);
+        } finally {
+            try {
+                if (br != null)
+                    br.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        org.apache.avro.Schema avroSchema = null;
+        try {
+            avroSchema = new Parser().parse(schemaString);
+        } catch (SchemaParseException ex) {
+            throw new ConnectException(
+                    String.format("Unable to succesfully parse schema from: %s", schemaString), ex);
+        }
+
+        SchemaBuilder builder = null;
+        // TODO: Add other avro schema types
+        switch (avroSchema.getType()) {
+            case RECORD: {
+                builder = SchemaBuilder.struct();
+                break;
+            }
+            case STRING: {
+                builder = SchemaBuilder.string();
+                break;
+            }
+            case INT: {
+                builder = SchemaBuilder.int32();
+                break;
+            }
+            case BOOLEAN: {
+                builder = SchemaBuilder.bool();
+                break;
+            }
+            default:
+                builder = SchemaBuilder.string();
+        }
+
+        if (avroSchema.getFullName() != null)
+            builder.name(avroSchema.getFullName());
+        if (avroSchema.getDoc() != null)
+            builder.doc(avroSchema.getDoc());
+
+        if (RECORD.equals(avroSchema.getType()) && avroSchema.getFields() != null
+                && !avroSchema.getFields().isEmpty()) {
+            for (org.apache.avro.Schema.Field field : avroSchema.getFields()) {
+                boolean hasDefault = field.defaultValue() != null;
+
+                SchemaBuilder innerBuilder = getInnerBuilder(field);
+
+                if (hasDefault)
+                    innerBuilder.optional();
+
+                builder.field(field.name(), innerBuilder.build());
+            }
+        }
+
+        dataSchema = builder.build();
     }
 
-    org.apache.avro.Schema avroSchema = null;
-    try {
-      avroSchema = new Parser().parse(schemaString);
-    } catch (SchemaParseException ex) {
-      throw new ConnectException(
-          String.format("Unable to succesfully parse schema from: %s", schemaString), ex);
-    }
 
-    SchemaBuilder builder = null;
-    // TODO: Add other avro schema types
-    switch (avroSchema.getType()) {
-      case RECORD: {
-        builder = SchemaBuilder.struct();
-        break;
-      }
-      case STRING: {
-        builder = SchemaBuilder.string();
-        break;
-      }
-      case INT: {
-        builder = SchemaBuilder.int32();
-        break;
-      }
-      case BOOLEAN: {
-        builder = SchemaBuilder.bool();
-        break;
-      }
-      default:
-        builder = SchemaBuilder.string();
-    }
-
-    if (avroSchema.getFullName() != null)
-      builder.name(avroSchema.getFullName());
-    if (avroSchema.getDoc() != null)
-      builder.doc(avroSchema.getDoc());
-
-    if (RECORD.equals(avroSchema.getType()) && avroSchema.getFields() != null
-        && !avroSchema.getFields().isEmpty()) {
-      for (org.apache.avro.Schema.Field field : avroSchema.getFields()) {
-        boolean hasDefault = field.defaultValue() != null;
-
-        SchemaBuilder innerBuilder = getInnerBuilder(field);
-
-        if (hasDefault)
-          innerBuilder.optional();
-
-        builder.field(field.name(), innerBuilder.build());
-      }
-    }
-
-      dataSchema = builder.build();
   }
 
   @Override
@@ -239,10 +249,15 @@ public class FileGenericSourceTask extends SourceTask {
                 records = new ArrayList<>();
 /*                records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
                       dataSchema, structDecodingRoute(line, filename)));*/
+                if (schemaValidate) {
+                    records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
+                            dataSchema, structDecodingRoute(line, filename)));
+                } else {
+                    log.info("STRING SCHEMA Processing");
+                    records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
+                            Schema.STRING_SCHEMA, line));
+                }
 
-                records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
-
-                        dataSchema, structDecodingRoute(line, filename)));
             }
             new ArrayList<SourceRecord>();
           } while (line != null);

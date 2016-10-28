@@ -44,6 +44,7 @@ public class FileGenericSourceConnector extends SourceConnector {
 	public static final String FILE_GLOB_CONFIG = "file.glob";
 	public static final String FILE_INTERVAL_CONFIG = "file.glob.interval";
 	public static final String FILE_OVERWRITE_CONFIG = "file.overwrite";
+    public static final String SCHEMA_IGNORED = "schema.ignored";
 	public static final String SCHEMA_URI_CONFIG = "schema.registry.uri";
 	public static final String SCHEMA_SUBJECT_CONFIG = "schema.subject";
 	public static final String SCHEMA_VERSION_CONFIG = "schema.version";
@@ -54,6 +55,7 @@ public class FileGenericSourceConnector extends SourceConnector {
 			.define(FILE_GLOB_CONFIG, Type.STRING, Importance.HIGH, "The glob criteria.")
 			.define(FILE_INTERVAL_CONFIG, Type.STRING, Importance.MEDIUM, "How often to check for new file(s) to be processed.")
 			.define(FILE_OVERWRITE_CONFIG, Type.STRING, Importance.MEDIUM,"If a file is modified should it be republished to kafka?")
+            .define(SCHEMA_IGNORED, Type.STRING, Importance.HIGH, "If the file schema is ignored?")
 			.define(SCHEMA_URI_CONFIG, Type.STRING, Importance.HIGH, "The URI to the Schema Registry.")
 			.define(SCHEMA_SUBJECT_CONFIG, Type.STRING, Importance.MEDIUM, "The subject used to validate avro schema.")
 			.define(SCHEMA_VERSION_CONFIG, Type.STRING, Importance.MEDIUM, "The version of the subject to be used for schema validation.");
@@ -63,6 +65,7 @@ public class FileGenericSourceConnector extends SourceConnector {
 	private String fileGlob;
 	private String fileInterval;
 	private String fileOverwrite;
+    private String schemaIgnored;
 	private String schemaUri;
 	private String schemaSubject;
 	private String schemaVersion;
@@ -79,6 +82,7 @@ public class FileGenericSourceConnector extends SourceConnector {
 		fileGlob = props.get(FILE_GLOB_CONFIG);
 		fileInterval = props.get(FILE_INTERVAL_CONFIG);
 		fileOverwrite = props.get(FILE_OVERWRITE_CONFIG);
+        schemaIgnored = props.get(SCHEMA_IGNORED);
 		schemaUri = props.get(SCHEMA_URI_CONFIG);
 		schemaSubject = props.get(SCHEMA_SUBJECT_CONFIG);
 		schemaVersion = props.get(SCHEMA_VERSION_CONFIG);
@@ -98,18 +102,28 @@ public class FileGenericSourceConnector extends SourceConnector {
 				throw new ConnectException("'file.glob.interval' must be a valid integer");
 			}
 		}
-		if (schemaUri == null || schemaUri.isEmpty())
-			throw new ConnectException("FileGenericSourceConnector configuration must include 'schema.registry.url' setting");
-		if (fileInterval == null || fileInterval.isEmpty())
-			fileInterval = "10";
-		if (fileOverwrite == null || fileOverwrite.isEmpty())
-			fileOverwrite = "FALSE";
-		if (schemaUri.endsWith("/"))
-			schemaUri = schemaUri.substring(0, schemaUri.length() - 1);
-		if (schemaSubject == null || schemaSubject.isEmpty())
-			schemaSubject = topic.concat("-value");
-		if (schemaVersion == null || schemaVersion.isEmpty())
-			schemaVersion = getLatestVersion(schemaUri, schemaSubject);
+        if (fileInterval == null || fileInterval.isEmpty())
+            fileInterval = "10";
+        if (fileOverwrite == null || fileOverwrite.isEmpty())
+            fileOverwrite = "FALSE";
+		if (schemaIgnored == null || schemaIgnored.isEmpty()) { // Do not ignore all schema info
+            schemaIgnored = "FALSE";
+            if (schemaUri == null || schemaUri.isEmpty()) {
+                throw new ConnectException("FileGenericSourceConnector configuration must include 'schema.registry.url' setting");
+            }
+            if (schemaUri.endsWith("/"))
+                schemaUri = schemaUri.substring(0, schemaUri.length() - 1);
+            if (schemaSubject == null || schemaSubject.isEmpty())
+                schemaSubject = topic.concat("-value");
+            if (schemaVersion == null || schemaVersion.isEmpty())
+                schemaVersion = getLatestVersion(schemaUri, schemaSubject);
+        } else { // Do ignore all schema info
+            log.warn("The Schema is undefined. Avro Convert will create STRING schema at subject: " + topic + "_value");
+            schemaUri = "NULL";
+            schemaVersion = "NULL";
+            schemaSubject = "NULL";
+            schemaIgnored = "TRUE";
+        }
 	}
 
 	@Override
@@ -125,6 +139,7 @@ public class FileGenericSourceConnector extends SourceConnector {
 		config.put(FILE_GLOB_CONFIG, fileGlob);
 		config.put(FILE_INTERVAL_CONFIG, fileInterval);
 		config.put(FILE_OVERWRITE_CONFIG, fileOverwrite);
+        config.put(SCHEMA_IGNORED, schemaIgnored);
 		config.put(SCHEMA_URI_CONFIG, schemaUri);
 		config.put(SCHEMA_SUBJECT_CONFIG, schemaSubject);
 		config.put(SCHEMA_VERSION_CONFIG, schemaVersion);
