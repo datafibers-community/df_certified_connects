@@ -106,15 +106,16 @@ public class FileGenericSourceTask extends SourceTask {
             schemaValidate = true;
             String schemaSubject = props.get(FileGenericSourceConnector.SCHEMA_SUBJECT_CONFIG);
             String schemaVersion = props.get(FileGenericSourceConnector.SCHEMA_VERSION_CONFIG);
-            String fullUrl =
-                    String.format("%s/subjects/%s/versions/%s", schemaUri, schemaSubject, schemaVersion);
+            String fullUrl = String.format("%s/subjects/%s/versions/%s", schemaUri, schemaSubject, schemaVersion);
 
             String schemaString = null;
             BufferedReader br = null;
+            
             try {
                 StringBuilder response = new StringBuilder();
                 String line;
                 br = new BufferedReader(new InputStreamReader(new URL(fullUrl).openStream()));
+                
                 while ((line = br.readLine()) != null) {
                     response.append(line);
                 }
@@ -251,9 +252,11 @@ public class FileGenericSourceTask extends SourceTask {
                     String line;
                     do {
                         line = extractLine();
-                        if (line != null) {
+                        
+                        if (line != null && !line.trim().isEmpty()) {
                             line = line.trim();
                             log.trace("Read a line from {}", filename);
+                            
                             if (records == null)
                                 records = new ArrayList<>();
 /*                records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
@@ -266,8 +269,8 @@ public class FileGenericSourceTask extends SourceTask {
                                 records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
                                         Schema.STRING_SCHEMA, line));
                             }
-
                         }
+                        
                         new ArrayList<SourceRecord>();
                     } while (line != null);
                 }
