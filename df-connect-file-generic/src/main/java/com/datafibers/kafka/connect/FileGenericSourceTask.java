@@ -83,6 +83,7 @@ public class FileGenericSourceTask extends SourceTask {
     private int offset = 0;
     private Long streamOffset;
     private String cuid;
+    private String metaDataTopic = "metaDataTopic";
 
     @Override
     public String version() {
@@ -195,7 +196,6 @@ public class FileGenericSourceTask extends SourceTask {
 
     }
 
-    private String metaDataTopic = "finance2";
 
     /**
      * file start meta_data, file meta, status, timestamp, cuid
