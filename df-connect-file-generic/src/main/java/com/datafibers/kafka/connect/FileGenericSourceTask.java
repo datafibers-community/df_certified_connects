@@ -234,6 +234,7 @@ public class FileGenericSourceTask extends SourceTask {
                 lastModifiedTime = new Timestamp(fileInProcessing.lastModified());
                 startTimeMS = System.currentTimeMillis();
                 startTime = new Timestamp(startTimeMS);
+                // Sending file metadata to metadataTopic when file starts to be read
                 sendMetaDataToQueue(filename, fileOwner, fileSize, lastModifiedTime, "Start", startTime, timeSpent, rowCount, cuid, records);
 
                 FileUtils.moveFile(FileUtils.getFile(currentPath.toString()), fileInProcessing);
@@ -330,6 +331,7 @@ public class FileGenericSourceTask extends SourceTask {
             long endTimeMS = System.currentTimeMillis();
             Timestamp endTime = new Timestamp(endTimeMS);
             timeSpent = endTimeMS - startTimeMS;
+            // Sending file metadata to metadataTopic after file completes reading
             sendMetaDataToQueue(filename, fileOwner, fileSize, lastModifiedTime, "End", endTime, timeSpent, rowCount, cuid, records);
 
             return records;
@@ -592,6 +594,7 @@ public class FileGenericSourceTask extends SourceTask {
     }
 
     /**
+     * Sending file metadata to metadataTopic
      *
      * @param filename
      * @param fileOwner
