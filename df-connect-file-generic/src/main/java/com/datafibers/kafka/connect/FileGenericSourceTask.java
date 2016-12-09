@@ -28,6 +28,10 @@ import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileOwnerAttributeView;
+import java.nio.file.attribute.UserPrincipal;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -78,7 +82,7 @@ public class FileGenericSourceTask extends SourceTask {
     private char[] buffer = new char[1024];
     private int offset = 0;
     private Long streamOffset;
-
+    private String cuid;
 
     @Override
     public String version() {
@@ -93,6 +97,7 @@ public class FileGenericSourceTask extends SourceTask {
                 .concat(props.get(FileGenericSourceConnector.FILE_GLOB_CONFIG));
         interval = Integer.parseInt(props.get(FileGenericSourceConnector.FILE_INTERVAL_CONFIG)) * 1000;
         overwrite = Boolean.valueOf(props.get(FileGenericSourceConnector.FILE_OVERWRITE_CONFIG));
+        cuid = props.get(FileGenericSourceConnector.CUID);
 
         findMatch();
         String schemaUri = props.get(FileGenericSourceConnector.SCHEMA_URI_CONFIG);
@@ -190,15 +195,47 @@ public class FileGenericSourceTask extends SourceTask {
 
     }
 
+    private String metaDataTopic = "finance2";
+
+    /**
+     * file start meta_data, file meta, status, timestamp, cuid
+     * file end meta_data,   row_count, status, timestamp, cuid
+     *
+     * file name, file size, file owner, (rowCount,) status, timestamp, (processed time,) cuid
+     * file name, file size, file owner, rowCount,   status, timestamp,  processed time,  cuid
+     *
+     * @return
+     * @throws InterruptedException
+     */
     @Override
     public List<SourceRecord> poll() throws InterruptedException {
+        Timestamp startTime = null;
+        long startTimeMS = 0;
+        long rowCount = -1;
+        String fileOwner = null;
+        long timeSpent = -1;
+        long fileSize = 0;
+        Timestamp lastModifiedTime = null;
+        ArrayList<SourceRecord> records = new ArrayList<SourceRecord>();
+        Path currentPath = null;
+
         if (!inProgressPaths.isEmpty()) {
             try {
-                Path currentPath = inProgressPaths.remove(0);
+                currentPath = inProgressPaths.remove(0);
                 processedPaths.add(currentPath);
                 filename = currentPath.getFileName().toString();
                 fileInProcessing = FileUtils.getFile(currentPath.toString() + FILENAME_EXT_PROCESSING);
                 fileProcessed = FileUtils.getFile(currentPath.toString() + FILENAME_EXT_PROCESSED);
+                File fileToBeProcessed = FileUtils.getFile(currentPath.toString());
+
+                fileSize = fileToBeProcessed.length();
+                UserPrincipal owner = Files.getOwner(currentPath);
+                fileOwner = owner.getName();
+                lastModifiedTime = new Timestamp(fileInProcessing.lastModified());
+                startTimeMS = System.currentTimeMillis();
+                startTime = new Timestamp(startTimeMS);
+                sendMetaDataToQueue(filename, fileOwner, fileSize, lastModifiedTime, "Start", startTime, timeSpent, rowCount, cuid, records);
+
                 FileUtils.moveFile(FileUtils.getFile(currentPath.toString()), fileInProcessing);
 
                 stream = new FileInputStream(fileInProcessing);
@@ -214,6 +251,9 @@ public class FileGenericSourceTask extends SourceTask {
                 reader = new BufferedReader(new InputStreamReader(stream));
                 log.info("Opened {} for reading", filename);
             } catch (IOException e) {
+                e.printStackTrace();
+                log.debug("===== error exception message1: " + e.getMessage());
+
                 throw new ConnectException(String.format("Unable to open file %", filename), e);
             }
         } else {
@@ -225,7 +265,7 @@ public class FileGenericSourceTask extends SourceTask {
             return null;
         }
 
-        ArrayList<SourceRecord> records = new ArrayList<SourceRecord>();
+        // ArrayList<SourceRecord> records = new ArrayList<SourceRecord>();
         //StringBuilder fileContent = new StringBuilder();
 
         try {
@@ -256,11 +296,14 @@ public class FileGenericSourceTask extends SourceTask {
                         if (line != null && !line.trim().isEmpty()) {
                             line = line.trim();
                             log.trace("Read a line from {}", filename);
-                            
+
+                            rowCount++;
+
                             if (records == null)
                                 records = new ArrayList<>();
-/*                records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
-                      dataSchema, structDecodingRoute(line, filename)));*/
+                                /* records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
+                                dataSchema, structDecodingRoute(line, filename)));*/
+
                             if (schemaValidate) {
                                 records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
                                         dataSchema, structDecodingRoute(line, filename)));
@@ -282,14 +325,20 @@ public class FileGenericSourceTask extends SourceTask {
             if (nread <= 0)
                 synchronized (this) {
                     this.wait(1000);
-                }
+            }
+
+            long endTimeMS = System.currentTimeMillis();
+            Timestamp endTime = new Timestamp(endTimeMS);
+            timeSpent = endTimeMS - startTimeMS;
+            sendMetaDataToQueue(filename, fileOwner, fileSize, lastModifiedTime, "End", endTime, timeSpent, rowCount, cuid, records);
 
             return records;
-
         } catch (IOException e) {
+            log.debug("Exception message2: " + e.getMessage());
+            e.printStackTrace();
+
             throw new ConnectException(String.format("Unable to read file %", filename), e);
         }
-
     }
 
     @Override
@@ -540,5 +589,47 @@ public class FileGenericSourceTask extends SourceTask {
             return struct;
         }
         return null;
+    }
+
+    /**
+     *
+     * @param filename
+     * @param fileOwner
+     * @param fileInProcessing
+     * @param status
+     * @param timestamp
+     * @param timeSpent
+     * @param rowCount
+     * @param cuid
+     * @param records
+     * @throws IOException
+     */
+    private void sendMetaDataToQueue(String filename, String fileOwner, long fileSize, Timestamp lastModifiedTime, String status, Timestamp timestamp, long timeSpent, long rowCount, String cuid, ArrayList<SourceRecord> records) throws IOException {
+        String metadataInfo = "";
+        //long fileSize = fileInProcessing.length();
+        //Timestamp lastModifiedTime = new Timestamp(fileInProcessing.lastModified());
+
+        if (rowCount == -1) {
+            metadataInfo = "{\"FileName\":\"" + filename + "\"" + ", \"FileSize\":" + "\"" + fileSize + "\"" +
+                    ", \"FileOwner\":" + "\"" + fileOwner + "\"" +
+                    ", \"LastModifiedTime\":" + "\"" + lastModifiedTime + "\"" +
+                    ", \"Status\":" + "\"" + status + "\"" +
+                    ", \"Timestamp\":" + "\"" + timestamp + "\"" +
+                    ", \"CUID\":" + "\"" + cuid + "\""
+                    + " }";
+        } else {
+            metadataInfo = "{\"FileName\":\"" + filename + "\"" + ", \"FileSize\":" + "\"" + fileSize + "\"" +
+                    ", \"FileOwner\":" + "\"" + fileOwner + "\"" +
+                    ", \"LastModifiedTime\":" + "\"" + lastModifiedTime + "\"" +
+                    ", \"RowCount\":" + "\"" + rowCount + "\"" +
+                    ", \"Status\":" + "\"" + status + "\"" +
+                    ", \"Timestamp\":" + "\"" + timestamp + "\"" +
+                    ", \"MilliSecSpent\":" + "\"" + timeSpent + "\"" +
+                    ", \"CUID\":" + "\"" + cuid + "\""
+                    + " }";
+        }
+
+        // System.out.println("==== Sending ==> " + metadataInfo);
+        records.add(new SourceRecord(null, null, metaDataTopic, Schema.STRING_SCHEMA, metadataInfo));
     }
 }
