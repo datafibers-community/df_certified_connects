@@ -536,6 +536,13 @@ public class FileGenericSourceTask extends SourceTask {
 
     }
 
+    /**
+     * Utility to get the schema from schema registry
+     * @param schemaUri
+     * @param schemaSubject
+     * @param schemaVersion
+     * @return
+     */
     private Schema getBuildSchema(String schemaUri, String schemaSubject, String schemaVersion) {
 
         String fullUrl = String.format("%s/subjects/%s/versions/%s", schemaUri, schemaSubject, schemaVersion);
