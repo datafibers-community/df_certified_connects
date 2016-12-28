@@ -89,7 +89,7 @@ public class FileGenericSourceConnector extends SourceConnector {
 		schemaUri = props.get(SCHEMA_URI_CONFIG);
 		schemaSubject = props.get(SCHEMA_SUBJECT_CONFIG);
 		schemaVersion = props.get(SCHEMA_VERSION_CONFIG);
-		cuid = props.get(SCHEMA_VERSION_CONFIG);
+		cuid = props.get(CUID);
 
 		if (topic == null || topic.isEmpty())
 			throw new ConnectException("FileGenericSourceConnector configuration must include 'topic' setting");
@@ -147,6 +147,7 @@ public class FileGenericSourceConnector extends SourceConnector {
 		config.put(SCHEMA_URI_CONFIG, schemaUri);
 		config.put(SCHEMA_SUBJECT_CONFIG, schemaSubject);
 		config.put(SCHEMA_VERSION_CONFIG, schemaVersion);
+		config.put(CUID, cuid);
 		log.info("FileGenericSourceConnector value: {}", getValues(config));
 		return Arrays.asList(config);
 	}
