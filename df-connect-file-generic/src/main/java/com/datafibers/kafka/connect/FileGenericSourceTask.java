@@ -313,6 +313,12 @@ public class FileGenericSourceTask extends SourceTask {
                     innerBuilder.defaultValue(field.defaultValue().asInt());
                 break;
             }
+            case LONG: {
+                innerBuilder = SchemaBuilder.int64();
+                if (hasDefault)
+                    innerBuilder.defaultValue(field.defaultValue().asLong());
+                break;
+            }
             case BOOLEAN: {
                 innerBuilder = SchemaBuilder.bool();
                 if (hasDefault)
@@ -425,6 +431,10 @@ public class FileGenericSourceTask extends SourceTask {
                             value = entry.getValue().asInt();
                             break;
                         }
+                        case INT64: {
+                            value = entry.getValue().asLong();
+                            break;
+                        }
                         case BOOLEAN: {
                             value = entry.getValue().asBoolean();
                             break;
@@ -514,6 +524,7 @@ public class FileGenericSourceTask extends SourceTask {
             String fileOwner = Files.getOwner(file.toPath()).getName();
             String lastModifiedTimestamp = new Timestamp(file.lastModified()).toString();
             String currentTimestamp = new Timestamp(System.currentTimeMillis()).toString();
+            Long currentTimeMillis = System.currentTimeMillis();
 
             Struct struct = new Struct(metaSchema);
             struct.put("cuid", cuid == null ? "N/A, not submit form df" : cuid)
@@ -522,11 +533,12 @@ public class FileGenericSourceTask extends SourceTask {
                     .put("file_owner", fileOwner)
                     .put("last_modified_timestamp", lastModifiedTimestamp)
                     .put("current_timestamp", currentTimestamp)
+                    .put("current_timemillis", currentTimeMillis)
                     .put("stream_offset", Long.toString(streamOffset))
                     .put("topic_sent", this.topic)
                     .put("schema_subject", schemaSubject)
                     .put("schema_version", schemaVersion)
-                    .put("status", status);                    ;
+                    .put("status", status);
 
             records.add(new SourceRecord(null, null, this.DF_METADATA_TOPIC, metaSchema, struct));
 
