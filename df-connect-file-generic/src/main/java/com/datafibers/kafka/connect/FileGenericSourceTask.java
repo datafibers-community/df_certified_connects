@@ -28,9 +28,9 @@ import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.Map.Entry;
-
 import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Parser;
 import org.apache.avro.Schema.Type;
@@ -54,6 +54,9 @@ import org.slf4j.LoggerFactory;
 
 public class FileGenericSourceTask extends SourceTask {
     private static final Logger log = LoggerFactory.getLogger(FileGenericSourceTask.class);
+
+    public static final String DF_METADATA_TOPIC = "df_meta";
+    public static final String DF_METADATA_SCHEMA_SUBJECT = "df_meta-value";
     public static final String FILENAME_FIELD = "filename";
     public static final String POSITION_FIELD = "position";
     public static final String FILENAME_EXT_PROCESSING = ".processing";
@@ -65,6 +68,9 @@ public class FileGenericSourceTask extends SourceTask {
     private int interval;
     private boolean overwrite;
     private boolean schemaValidate;
+    private String schemaUri;
+    private String schemaSubject;
+    private String schemaVersion;
     private Schema dataSchema;
 
     private List<Path> processedPaths = new ArrayList<Path>();
@@ -78,7 +84,7 @@ public class FileGenericSourceTask extends SourceTask {
     private char[] buffer = new char[1024];
     private int offset = 0;
     private Long streamOffset;
-
+    private String cuid;
 
     @Override
     public String version() {
@@ -93,9 +99,10 @@ public class FileGenericSourceTask extends SourceTask {
                 .concat(props.get(FileGenericSourceConnector.FILE_GLOB_CONFIG));
         interval = Integer.parseInt(props.get(FileGenericSourceConnector.FILE_INTERVAL_CONFIG)) * 1000;
         overwrite = Boolean.valueOf(props.get(FileGenericSourceConnector.FILE_OVERWRITE_CONFIG));
+        cuid = props.get(FileGenericSourceConnector.CUID);
 
         findMatch();
-        String schemaUri = props.get(FileGenericSourceConnector.SCHEMA_URI_CONFIG);
+        schemaUri = props.get(FileGenericSourceConnector.SCHEMA_URI_CONFIG);
         String schemaIgnored = props.get(FileGenericSourceConnector.SCHEMA_IGNORED);
 
         if (schemaIgnored.equalsIgnoreCase("true")) {
@@ -104,100 +111,40 @@ public class FileGenericSourceTask extends SourceTask {
         } else {
             // Get avro schema from registry and build proper schema POJO from it
             schemaValidate = true;
-            String schemaSubject = props.get(FileGenericSourceConnector.SCHEMA_SUBJECT_CONFIG);
-            String schemaVersion = props.get(FileGenericSourceConnector.SCHEMA_VERSION_CONFIG);
-            String fullUrl =
-                    String.format("%s/subjects/%s/versions/%s", schemaUri, schemaSubject, schemaVersion);
-
-            String schemaString = null;
-            BufferedReader br = null;
-            try {
-                StringBuilder response = new StringBuilder();
-                String line;
-                br = new BufferedReader(new InputStreamReader(new URL(fullUrl).openStream()));
-                while ((line = br.readLine()) != null) {
-                    response.append(line);
-                }
-
-                JsonNode responseJson = new ObjectMapper().readValue(response.toString(), JsonNode.class);
-                schemaString = responseJson.get("schema").asText();
-                log.info("Schem String is " + schemaString);
-            } catch (Exception ex) {
-                throw new ConnectException("Unable to retrieve schema from Schema Registry", ex);
-            } finally {
-                try {
-                    if (br != null)
-                        br.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            org.apache.avro.Schema avroSchema = null;
-            try {
-                avroSchema = new Parser().parse(schemaString);
-            } catch (SchemaParseException ex) {
-                throw new ConnectException(
-                        String.format("Unable to succesfully parse schema from: %s", schemaString), ex);
-            }
-
-            SchemaBuilder builder = null;
-            // TODO: Add other avro schema types
-            switch (avroSchema.getType()) {
-                case RECORD: {
-                    builder = SchemaBuilder.struct();
-                    break;
-                }
-                case STRING: {
-                    builder = SchemaBuilder.string();
-                    break;
-                }
-                case INT: {
-                    builder = SchemaBuilder.int32();
-                    break;
-                }
-                case BOOLEAN: {
-                    builder = SchemaBuilder.bool();
-                    break;
-                }
-                default:
-                    builder = SchemaBuilder.string();
-            }
-
-            if (avroSchema.getFullName() != null)
-                builder.name(avroSchema.getFullName());
-            if (avroSchema.getDoc() != null)
-                builder.doc(avroSchema.getDoc());
-
-            if (RECORD.equals(avroSchema.getType()) && avroSchema.getFields() != null
-                    && !avroSchema.getFields().isEmpty()) {
-                for (org.apache.avro.Schema.Field field : avroSchema.getFields()) {
-                    boolean hasDefault = field.defaultValue() != null;
-
-                    SchemaBuilder innerBuilder = getInnerBuilder(field);
-
-                    if (hasDefault)
-                        innerBuilder.optional();
-
-                    builder.field(field.name(), innerBuilder.build());
-                }
-            }
-
-            dataSchema = builder.build();
+            schemaSubject = props.get(FileGenericSourceConnector.SCHEMA_SUBJECT_CONFIG);
+            schemaVersion = props.get(FileGenericSourceConnector.SCHEMA_VERSION_CONFIG);
+            dataSchema = getBuildSchema(schemaUri, schemaSubject, schemaVersion);
         }
-
-
     }
 
+
+    /**
+     * file start meta_data, file meta, status, timestamp, cuid
+     * file end meta_data,   row_count, status, timestamp, cuid
+     *
+     * file name, file size, file owner, (rowCount,) status, timestamp, (processed time,) cuid
+     * file name, file size, file owner, rowCount,   status, timestamp,  processed time,  cuid
+     *
+     * @return
+     * @throws InterruptedException
+     */
     @Override
     public List<SourceRecord> poll() throws InterruptedException {
+        ArrayList<SourceRecord> records = new ArrayList<SourceRecord>();
+        Path currentPath = null;
+
         if (!inProgressPaths.isEmpty()) {
             try {
-                Path currentPath = inProgressPaths.remove(0);
+                currentPath = inProgressPaths.remove(0);
                 processedPaths.add(currentPath);
                 filename = currentPath.getFileName().toString();
                 fileInProcessing = FileUtils.getFile(currentPath.toString() + FILENAME_EXT_PROCESSING);
                 fileProcessed = FileUtils.getFile(currentPath.toString() + FILENAME_EXT_PROCESSED);
+                File fileToBeProcessed = FileUtils.getFile(currentPath.toString());
+
+                // Sending file metadata to metadataTopic when file starts to be read
+                sendFileMetaToDFMetaTopic(fileToBeProcessed, cuid, "START", 0L, records);
+
                 FileUtils.moveFile(FileUtils.getFile(currentPath.toString()), fileInProcessing);
 
                 stream = new FileInputStream(fileInProcessing);
@@ -213,6 +160,9 @@ public class FileGenericSourceTask extends SourceTask {
                 reader = new BufferedReader(new InputStreamReader(stream));
                 log.info("Opened {} for reading", filename);
             } catch (IOException e) {
+                e.printStackTrace();
+                log.debug("===== error exception message1: " + e.getMessage());
+
                 throw new ConnectException(String.format("Unable to open file %", filename), e);
             }
         } else {
@@ -224,7 +174,7 @@ public class FileGenericSourceTask extends SourceTask {
             return null;
         }
 
-        ArrayList<SourceRecord> records = new ArrayList<SourceRecord>();
+        // ArrayList<SourceRecord> records = new ArrayList<SourceRecord>();
         //StringBuilder fileContent = new StringBuilder();
 
         try {
@@ -251,13 +201,16 @@ public class FileGenericSourceTask extends SourceTask {
                     String line;
                     do {
                         line = extractLine();
-                        if (line != null) {
+
+                        if (line != null && !line.trim().isEmpty()) {
                             line = line.trim();
                             log.trace("Read a line from {}", filename);
+
                             if (records == null)
                                 records = new ArrayList<>();
-/*                records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
-                      dataSchema, structDecodingRoute(line, filename)));*/
+                                /* records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
+                                dataSchema, structDecodingRoute(line, filename)));*/
+
                             if (schemaValidate) {
                                 records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
                                         dataSchema, structDecodingRoute(line, filename)));
@@ -266,12 +219,13 @@ public class FileGenericSourceTask extends SourceTask {
                                 records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic,
                                         Schema.STRING_SCHEMA, line));
                             }
-
                         }
+                        
                         new ArrayList<SourceRecord>();
                     } while (line != null);
                 }
             }
+
 
             // Finish processing and rename as processed.
             FileUtils.moveFile(fileInProcessing, fileProcessed);
@@ -279,14 +233,18 @@ public class FileGenericSourceTask extends SourceTask {
             if (nread <= 0)
                 synchronized (this) {
                     this.wait(1000);
-                }
+            }
 
+            // Sending file metadata to metadataTopic after file completes reading
+            sendFileMetaToDFMetaTopic(fileProcessed, cuid, "END", streamOffset, records);
             return records;
 
         } catch (IOException e) {
+            log.debug("Exception message2: " + e.getMessage());
+            e.printStackTrace();
+
             throw new ConnectException(String.format("Unable to read file %", filename), e);
         }
-
     }
 
     @Override
@@ -353,6 +311,12 @@ public class FileGenericSourceTask extends SourceTask {
                 innerBuilder = SchemaBuilder.int32();
                 if (hasDefault)
                     innerBuilder.defaultValue(field.defaultValue().asInt());
+                break;
+            }
+            case LONG: {
+                innerBuilder = SchemaBuilder.int64();
+                if (hasDefault)
+                    innerBuilder.defaultValue(field.defaultValue().asLong());
                 break;
             }
             case BOOLEAN: {
@@ -467,6 +431,10 @@ public class FileGenericSourceTask extends SourceTask {
                             value = entry.getValue().asInt();
                             break;
                         }
+                        case INT64: {
+                            value = entry.getValue().asLong();
+                            break;
+                        }
                         case BOOLEAN: {
                             value = entry.getValue().asBoolean();
                             break;
@@ -475,6 +443,7 @@ public class FileGenericSourceTask extends SourceTask {
                             value = entry.getValue().asText();
                     }
                 }
+                System.out.println("STRUCT PUT -" + entry.getKey() + ":" + value);
                 struct.put(entry.getKey(), value);
 
             }
@@ -537,5 +506,135 @@ public class FileGenericSourceTask extends SourceTask {
             return struct;
         }
         return null;
+    }
+
+    /**
+     * Send metadata to the df_repository
+     */
+
+    private void sendFileMetaToDFMetaTopic(File file, String cuid, String status, long streamOffset,
+                                          ArrayList<SourceRecord> records) {
+
+        Schema metaSchema = getBuildSchema(schemaUri, DF_METADATA_SCHEMA_SUBJECT, "latest");
+        System.out.println(metaSchema.fields());
+
+        try {
+            String fileSize = Long.toString(file.length());
+            String fileName = file.getName().replace(FILENAME_EXT_PROCESSING, "").replace(FILENAME_EXT_PROCESSED, "");
+            String fileOwner = Files.getOwner(file.toPath()).getName();
+            String lastModifiedTimestamp = new Timestamp(file.lastModified()).toString();
+            String currentTimestamp = new Timestamp(System.currentTimeMillis()).toString();
+            Long currentTimeMillis = System.currentTimeMillis();
+
+            Struct struct = new Struct(metaSchema);
+            struct.put("cuid", cuid == null ? "N/A, not submit form df" : cuid)
+                    .put("file_name", fileName)
+                    .put("file_size", fileSize)
+                    .put("file_owner", fileOwner)
+                    .put("last_modified_timestamp", lastModifiedTimestamp)
+                    .put("current_timestamp", currentTimestamp)
+                    .put("current_timemillis", currentTimeMillis)
+                    .put("stream_offset", Long.toString(streamOffset))
+                    .put("topic_sent", this.topic)
+                    .put("schema_subject", schemaSubject)
+                    .put("schema_version", schemaVersion)
+                    .put("status", status);
+
+            records.add(new SourceRecord(null, null, this.DF_METADATA_TOPIC, metaSchema, struct));
+
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+
+    }
+
+    /**
+     * Utility to get the schema from schema registry
+     * @param schemaUri
+     * @param schemaSubject
+     * @param schemaVersion
+     * @return
+     */
+    private Schema getBuildSchema(String schemaUri, String schemaSubject, String schemaVersion) {
+
+        String fullUrl = String.format("%s/subjects/%s/versions/%s", schemaUri, schemaSubject, schemaVersion);
+
+        String schemaString = null;
+        BufferedReader br = null;
+
+        try {
+            StringBuilder response = new StringBuilder();
+            String line;
+            br = new BufferedReader(new InputStreamReader(new URL(fullUrl).openStream()));
+
+            while ((line = br.readLine()) != null) {
+                response.append(line);
+            }
+
+            JsonNode responseJson = new ObjectMapper().readValue(response.toString(), JsonNode.class);
+            schemaString = responseJson.get("schema").asText();
+            log.info("Schema String is " + schemaString);
+        } catch (Exception ex) {
+            throw new ConnectException("Unable to retrieve schema from Schema Registry", ex);
+        } finally {
+            try {
+                if (br != null)
+                    br.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        org.apache.avro.Schema avroSchema = null;
+        try {
+            avroSchema = new Parser().parse(schemaString);
+        } catch (SchemaParseException ex) {
+            throw new ConnectException(
+                    String.format("Unable to successfully parse schema from: %s", schemaString), ex);
+        }
+
+        SchemaBuilder builder = null;
+        // TODO: Add other avro schema types
+        switch (avroSchema.getType()) {
+            case RECORD: {
+                builder = SchemaBuilder.struct();
+                break;
+            }
+            case STRING: {
+                builder = SchemaBuilder.string();
+                break;
+            }
+            case INT: {
+                builder = SchemaBuilder.int32();
+                break;
+            }
+            case BOOLEAN: {
+                builder = SchemaBuilder.bool();
+                break;
+            }
+            default:
+                builder = SchemaBuilder.string();
+        }
+
+        if (avroSchema.getFullName() != null)
+            builder.name(avroSchema.getFullName());
+        if (avroSchema.getDoc() != null)
+            builder.doc(avroSchema.getDoc());
+
+        if (RECORD.equals(avroSchema.getType()) && avroSchema.getFields() != null
+                && !avroSchema.getFields().isEmpty()) {
+            for (org.apache.avro.Schema.Field field : avroSchema.getFields()) {
+                boolean hasDefault = field.defaultValue() != null;
+
+                SchemaBuilder innerBuilder = getInnerBuilder(field);
+
+                if (hasDefault)
+                    innerBuilder.optional();
+
+                builder.field(field.name(), innerBuilder.build());
+            }
+        }
+
+        return builder.build();
     }
 }

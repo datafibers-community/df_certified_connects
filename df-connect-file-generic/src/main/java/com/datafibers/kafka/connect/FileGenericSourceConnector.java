@@ -48,6 +48,7 @@ public class FileGenericSourceConnector extends SourceConnector {
 	public static final String SCHEMA_URI_CONFIG = "schema.registry.uri";
 	public static final String SCHEMA_SUBJECT_CONFIG = "schema.subject";
 	public static final String SCHEMA_VERSION_CONFIG = "schema.version";
+	public static final String CUID = "cuid";
 
 	private static final ConfigDef CONFIG_DEF = new ConfigDef()
 			.define(TOPIC_CONFIG, Type.STRING, Importance.HIGH, "The topic to publish data to")
@@ -58,7 +59,8 @@ public class FileGenericSourceConnector extends SourceConnector {
             .define(SCHEMA_IGNORED, Type.STRING, Importance.HIGH, "If the file schema is ignored?")
 			.define(SCHEMA_URI_CONFIG, Type.STRING, Importance.HIGH, "The URI to the Schema Registry.")
 			.define(SCHEMA_SUBJECT_CONFIG, Type.STRING, Importance.MEDIUM, "The subject used to validate avro schema.")
-			.define(SCHEMA_VERSION_CONFIG, Type.STRING, Importance.MEDIUM, "The version of the subject to be used for schema validation.");
+			.define(SCHEMA_VERSION_CONFIG, Type.STRING, Importance.MEDIUM, "The version of the subject to be used for schema validation.")
+			.define(CUID, Type.STRING, Importance.MEDIUM, "CUID");
 
 	private String topic;
 	private String fileLocation;
@@ -69,6 +71,7 @@ public class FileGenericSourceConnector extends SourceConnector {
 	private String schemaUri;
 	private String schemaSubject;
 	private String schemaVersion;
+	private String cuid;
 
 	@Override
 	public String version() {
@@ -86,6 +89,7 @@ public class FileGenericSourceConnector extends SourceConnector {
 		schemaUri = props.get(SCHEMA_URI_CONFIG);
 		schemaSubject = props.get(SCHEMA_SUBJECT_CONFIG);
 		schemaVersion = props.get(SCHEMA_VERSION_CONFIG);
+		cuid = props.get(CUID);
 
 		if (topic == null || topic.isEmpty())
 			throw new ConnectException("FileGenericSourceConnector configuration must include 'topic' setting");
@@ -143,6 +147,7 @@ public class FileGenericSourceConnector extends SourceConnector {
 		config.put(SCHEMA_URI_CONFIG, schemaUri);
 		config.put(SCHEMA_SUBJECT_CONFIG, schemaSubject);
 		config.put(SCHEMA_VERSION_CONFIG, schemaVersion);
+		config.put(CUID, cuid);
 		log.info("FileGenericSourceConnector value: {}", getValues(config));
 		return Arrays.asList(config);
 	}
