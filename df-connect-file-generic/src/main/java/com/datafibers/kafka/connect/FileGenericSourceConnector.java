@@ -118,7 +118,7 @@ public class FileGenericSourceConnector extends SourceConnector {
             if (schemaUri.endsWith("/"))
                 schemaUri = schemaUri.substring(0, schemaUri.length() - 1);
             if (schemaSubject == null || schemaSubject.isEmpty())
-                schemaSubject = topic.concat("-value");
+                schemaSubject = topic;
             if (schemaVersion == null || schemaVersion.isEmpty())
                 schemaVersion = getLatestVersion(schemaUri, schemaSubject);
         } else { // Do ignore all schema info
