@@ -143,7 +143,7 @@ public class FileGenericSourceTask extends SourceTask {
                 File fileToBeProcessed = FileUtils.getFile(currentPath.toString());
 
                 // Sending file metadata to metadataTopic when file starts to be read
-                sendFileMetaToDFMetaTopic(fileToBeProcessed, cuid, "START", 0L, records);
+                sendFileMetaToDFMetaTopic(fileToBeProcessed, cuid, "STARTED", 0L, records);
 
                 FileUtils.moveFile(FileUtils.getFile(currentPath.toString()), fileInProcessing);
 
@@ -236,7 +236,7 @@ public class FileGenericSourceTask extends SourceTask {
             }
 
             // Sending file metadata to metadataTopic after file completes reading
-            sendFileMetaToDFMetaTopic(fileProcessed, cuid, "END", streamOffset, records);
+            sendFileMetaToDFMetaTopic(fileProcessed, cuid, "COMPLETED", streamOffset, records);
             return records;
 
         } catch (IOException e) {
@@ -385,8 +385,12 @@ public class FileGenericSourceTask extends SourceTask {
         Struct st = null;
         switch (FilenameUtils.getExtension(file_name).toLowerCase()) {
             case "json":
-                log.info("Read line @@" + line + "@@ from Json File " + file_name);
-                st = structDecodingFromJson(line);
+                if(line.startsWith("{")) {
+                    log.info("Read line @@" + line + "@@ from Json File " + file_name);
+                    st = structDecodingFromJson(line);
+                } else {
+                    log.warn("Ignored line @@" + line + "@@ from Json File " + file_name);
+                }
                 break;
             case "csv":
             case "tsv":
