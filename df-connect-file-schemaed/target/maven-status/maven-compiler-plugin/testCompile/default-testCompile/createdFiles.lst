@@ -1,6 +1,0 @@
-com\datafibers\kafka\connect\SchemaedFileSinkTaskTest.class
-com\datafibers\kafka\connect\SchemaedFileSourceConnectorConfigTest.class
-com\datafibers\kafka\connect\SchemaedFileSinkConnectorTest.class
-com\datafibers\kafka\connect\SchemaedFileSourceTaskTest.class
-com\datafibers\kafka\connect\SchemaedFileSinkConnectorConfigTest.class
-com\datafibers\kafka\connect\SchemaedFileSourceConnectorTest.class
