@@ -111,11 +111,11 @@ public class FileGenericSourceConnector extends SourceConnector {
 		schemaVersion = props.get(SCHEMA_VERSION_CONFIG);
 		cuid = props.get(CUID);
 
-		if (topic.equalsIgnoreCase("n/a"))
+		if (topic == null || topic.equalsIgnoreCase("n/a"))
 			throw new ConnectException("FileGenericSourceConnector configuration must include 'topic' setting");
 		if (topic.contains(","))
 			throw new ConnectException("FileGenericSourceConnector should only have a single topic when used as a source.");
-		if (fileLocation.equalsIgnoreCase("n/a"))
+		if (fileLocation == null || fileLocation.equalsIgnoreCase("n/a"))
 			throw new ConnectException("FileGenericSourceConnector configuration must include 'file.location' setting");
 		if (fileInterval != null && !fileInterval.isEmpty()) {
 			try {
@@ -123,13 +123,15 @@ public class FileGenericSourceConnector extends SourceConnector {
 			} catch (NumberFormatException nfe) {
 				throw new ConnectException("'file.glob.interval' must be a valid integer");
 			}
+		} else {
+			fileInterval = "10";
 		}
 		if (schemaIgnored == null || schemaIgnored.equalsIgnoreCase("FALSE")) { // Do not ignore all schema info
             if (schemaUri.endsWith("/"))
                 schemaUri = schemaUri.substring(0, schemaUri.length() - 1);
-            if (schemaSubject.equalsIgnoreCase("n/a"))
+            if (schemaSubject == null || schemaSubject.equalsIgnoreCase("n/a"))
                 schemaSubject = topic;
-            if (schemaVersion.equalsIgnoreCase("n/a"))
+            if (schemaVersion == null || schemaVersion.equalsIgnoreCase("n/a"))
                 schemaVersion = getLatestVersion(schemaUri, schemaSubject);
 			schemaIgnored = "FALSE";
         } else { // Do ignore all schema info
