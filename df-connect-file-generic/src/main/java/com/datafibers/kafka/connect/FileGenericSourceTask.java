@@ -56,7 +56,7 @@ public class FileGenericSourceTask extends SourceTask {
     private static final Logger log = LoggerFactory.getLogger(FileGenericSourceTask.class);
 
     public static final String DF_METADATA_TOPIC = "df_meta";
-    public static final String DF_METADATA_SCHEMA_SUBJECT = "df_meta-value";
+    public static final String DF_METADATA_SCHEMA_SUBJECT = "df_meta";
     public static final String FILENAME_FIELD = "filename";
     public static final String POSITION_FIELD = "position";
     public static final String FILENAME_EXT_PROCESSING = ".processing";
