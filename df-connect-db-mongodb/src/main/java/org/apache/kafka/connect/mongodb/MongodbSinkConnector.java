@@ -78,12 +78,12 @@ public class MongodbSinkConnector extends SinkConnector {
         bulkSize = map.get(BULK_SIZE);
         host = map.get(HOST);
         database = map.get(DATABASE);
+        collections = map.get(COLLECTIONS);
         if(collections == null || collections.isEmpty())
             throw new ConnectException("collection cannot be empty.");
-        collections = map.get(COLLECTIONS);
+        topics = map.get(TOPICS);
         if(topics == null || topics.isEmpty())
             throw new ConnectException("topics cannot be empty.");
-        topics = map.get(TOPICS);
         if (collections.split(",").length != topics.split(",").length) {
             throw new ConnectException("The number of topics should be the same as the number of collections");
         }
