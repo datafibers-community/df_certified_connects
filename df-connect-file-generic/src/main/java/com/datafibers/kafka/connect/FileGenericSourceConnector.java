@@ -124,13 +124,14 @@ public class FileGenericSourceConnector extends SourceConnector {
 				throw new ConnectException("'file.glob.interval' must be a valid integer");
 			}
 		}
-		if (schemaIgnored.equalsIgnoreCase("FALSE")) { // Do not ignore all schema info
+		if (schemaIgnored == null || schemaIgnored.equalsIgnoreCase("FALSE")) { // Do not ignore all schema info
             if (schemaUri.endsWith("/"))
                 schemaUri = schemaUri.substring(0, schemaUri.length() - 1);
             if (schemaSubject.equalsIgnoreCase("n/a"))
                 schemaSubject = topic;
             if (schemaVersion.equalsIgnoreCase("n/a"))
                 schemaVersion = getLatestVersion(schemaUri, schemaSubject);
+			schemaIgnored = "FALSE";
         } else { // Do ignore all schema info
             log.warn("The Schema is undefined. Avro Convert will create STRING schema at subject: " + topic + "_value");
             schemaUri = "NULL";
