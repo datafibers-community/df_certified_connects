@@ -23,11 +23,21 @@ public class MongodbSinkConnector extends SinkConnector {
     private final static Logger log = LoggerFactory.getLogger(MongodbSinkConnector.class);
 
     public static final String PORT = "port";
+    public static final String PORT_DOC = "The port of the mongodb";
+    public static final String PORT_DEFAULT = "27017";
     public static final String HOST = "host";
+    public static final String HOST_DOC = "The host of the mongodb.";
+    public static final String HOST_DEFAULT = "localhost";
     public static final String BULK_SIZE = "bulk.size";
+    public static final String BULK_SIZE_DOC = "The size of message to commit.";
+    public static final String BULK_SIZE_DEFAULT = "1";
     public static final String DATABASE = "mongodb.database";
+    public static final String DATABASE_DOC = "The database name in mongodb.";
+    public static final String DATABASE_DEFAULT = "DEFAULT_DB";
     public static final String COLLECTIONS = "mongodb.collections";
+    public static final String COLLECTIONS_DOC = "The collection name in mongodb.";
     public static final String TOPICS = "topics";
+    public static final String TOPICS_DOC = "The kafka topic to write the data.";
 
     private String port;
     private String host;
@@ -37,12 +47,12 @@ public class MongodbSinkConnector extends SinkConnector {
     private String topics;
 
     private static final ConfigDef CONFIG_DEF = new ConfigDef()
-            .define(PORT, ConfigDef.Type.STRING, ConfigDef.Importance.HIGH, "The port of the mongodb")
-            .define(HOST, ConfigDef.Type.STRING, ConfigDef.Importance.HIGH, "The host of the mongodb.")
-            .define(BULK_SIZE, ConfigDef.Type.STRING, ConfigDef.Importance.HIGH, "The size of message to commit.")
-            .define(DATABASE, ConfigDef.Type.STRING, ConfigDef.Importance.MEDIUM, "The database name in mongodb.")
-            .define(COLLECTIONS, ConfigDef.Type.STRING, ConfigDef.Importance.MEDIUM,"The collection name in mongodb.")
-            .define(TOPICS, ConfigDef.Type.STRING, ConfigDef.Importance.HIGH, "The kafka topic to write the data.");
+            .define(PORT, ConfigDef.Type.STRING, PORT_DEFAULT, ConfigDef.Importance.HIGH, PORT_DOC)
+            .define(HOST, ConfigDef.Type.STRING, HOST_DEFAULT, ConfigDef.Importance.HIGH, HOST_DOC)
+            .define(BULK_SIZE, ConfigDef.Type.STRING, BULK_SIZE_DEFAULT, ConfigDef.Importance.HIGH, BULK_SIZE_DOC)
+            .define(DATABASE, ConfigDef.Type.STRING, DATABASE_DEFAULT, ConfigDef.Importance.MEDIUM, DATABASE_DOC)
+            .define(COLLECTIONS, ConfigDef.Type.STRING, ConfigDef.Importance.MEDIUM, COLLECTIONS_DOC)
+            .define(TOPICS, ConfigDef.Type.STRING, ConfigDef.Importance.HIGH, TOPICS_DOC);
 
     /**
      * Get the version of this connector.
@@ -65,25 +75,18 @@ public class MongodbSinkConnector extends SinkConnector {
         log.trace("Parsing configuration");
 
         port = map.get(PORT);
-        if (port == null || port.isEmpty())
-            throw new ConnectException("Missing " + PORT + " config");
-
         bulkSize = map.get(BULK_SIZE);
-        if (bulkSize == null || bulkSize.isEmpty())
-            throw new ConnectException("Missing " + BULK_SIZE + " config");
-
         host = map.get(HOST);
-        if (host == null || host.isEmpty())
-            throw new ConnectException("Missing " + HOST + " config");
-
         database = map.get(DATABASE);
+        if(collections == null || collections.isEmpty())
+            throw new ConnectException("collection cannot be empty.");
         collections = map.get(COLLECTIONS);
+        if(topics == null || topics.isEmpty())
+            throw new ConnectException("collection cannot be empty.");
         topics = map.get(TOPICS);
-
         if (collections.split(",").length != topics.split(",").length) {
             throw new ConnectException("The number of topics should be the same as the number of collections");
         }
-
         LogUtils.dumpConfiguration(map, log);
     }
 

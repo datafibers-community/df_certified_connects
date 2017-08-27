@@ -40,27 +40,47 @@ public class FileGenericSourceConnector extends SourceConnector {
 	private static final Logger log = LoggerFactory.getLogger(FileGenericSourceConnector.class);
 
 	public static final String TOPIC_CONFIG = "topic";
+	public static final String TOPIC_CONFIG_DOC = "The topic to publish data to";
+	public static final String TOPIC_CONFIG_DEFAULT = "n/a";
 	public static final String FILE_LOCATION_CONFIG = "file.location";
+	public static final String FILE_LOCATION_CONFIG_DOC = "The location of the file(s) to process.";
+	public static final String FILE_LOCATION_CONFIG_DEFAULT = "n/a";
 	public static final String FILE_GLOB_CONFIG = "file.glob";
+	public static final String FILE_GLOB_CONFIG_DOC = "The glob criteria.";
+	public static final String FILE_GLOB_CONFIG_DEFAULT = "*";
 	public static final String FILE_INTERVAL_CONFIG = "file.glob.interval";
+	public static final String FILE_INTERVAL_CONFIG_DOC = "How often to check for new file(s) to be processed.";
+	public static final String FILE_INTERVAL_CONFIG_DEFAULT = "10";
 	public static final String FILE_OVERWRITE_CONFIG = "file.overwrite";
+	public static final String FILE_OVERWRITE_CONFIG_DOC = "If a file is modified should it be republished to kafka?";
+	public static final String FILE_OVERWRITE_CONFIG_DEFAULT = "FALSE";
     public static final String SCHEMA_IGNORED = "schema.ignored";
+	public static final String SCHEMA_IGNORED_DOC = "If the file schema is ignored?";
+	public static final String SCHEMA_IGNORED_DEFAULT = "FALSE";
 	public static final String SCHEMA_URI_CONFIG = "schema.registry.uri";
+	public static final String SCHEMA_URI_CONFIG_DOC = "The URI to the Schema Registry.";
+	public static final String SCHEMA_URI_CONFIG_DEFAULT = "http://localhost:8081";
 	public static final String SCHEMA_SUBJECT_CONFIG = "schema.subject";
+	public static final String SCHEMA_SUBJECT_CONFIG_DOC = "The subject used to validate avro schema.";
+	public static final String SCHEMA_SUBJECT_CONFIG_DEFAULT = "n/a";
 	public static final String SCHEMA_VERSION_CONFIG = "schema.version";
+	public static final String SCHEMA_VERSION_CONFIG_DOC = "The version of the subject to be used for schema validation.";
+	public static final String SCHEMA_VERSION_CONFIG_DEFAULT = "n/a";
 	public static final String CUID = "cuid";
+	public static final String CUID_DOC = "cuid";
+	public static final String CUID_DEFAULT = "n/a";
 
 	private static final ConfigDef CONFIG_DEF = new ConfigDef()
-			.define(TOPIC_CONFIG, Type.STRING, Importance.HIGH, "The topic to publish data to")
-			.define(FILE_LOCATION_CONFIG, Type.STRING, Importance.HIGH, "The location of the file(s) to process.")
-			.define(FILE_GLOB_CONFIG, Type.STRING, Importance.HIGH, "The glob criteria.")
-			.define(FILE_INTERVAL_CONFIG, Type.STRING, Importance.MEDIUM, "How often to check for new file(s) to be processed.")
-			.define(FILE_OVERWRITE_CONFIG, Type.STRING, Importance.MEDIUM,"If a file is modified should it be republished to kafka?")
-            .define(SCHEMA_IGNORED, Type.STRING, Importance.HIGH, "If the file schema is ignored?")
-			.define(SCHEMA_URI_CONFIG, Type.STRING, Importance.HIGH, "The URI to the Schema Registry.")
-			.define(SCHEMA_SUBJECT_CONFIG, Type.STRING, Importance.MEDIUM, "The subject used to validate avro schema.")
-			.define(SCHEMA_VERSION_CONFIG, Type.STRING, Importance.MEDIUM, "The version of the subject to be used for schema validation.")
-			.define(CUID, Type.STRING, Importance.MEDIUM, "CUID");
+			.define(TOPIC_CONFIG, Type.STRING, TOPIC_CONFIG_DEFAULT, Importance.HIGH, TOPIC_CONFIG_DOC)
+			.define(FILE_LOCATION_CONFIG, Type.STRING, FILE_LOCATION_CONFIG_DEFAULT, Importance.HIGH, FILE_LOCATION_CONFIG_DOC)
+			.define(FILE_GLOB_CONFIG, Type.STRING, FILE_GLOB_CONFIG_DEFAULT, Importance.HIGH, FILE_GLOB_CONFIG_DOC)
+			.define(FILE_INTERVAL_CONFIG, Type.STRING, FILE_INTERVAL_CONFIG_DEFAULT, Importance.MEDIUM, FILE_INTERVAL_CONFIG_DOC)
+			.define(FILE_OVERWRITE_CONFIG, Type.STRING, FILE_OVERWRITE_CONFIG_DEFAULT, Importance.MEDIUM, FILE_OVERWRITE_CONFIG_DOC)
+            .define(SCHEMA_IGNORED, Type.STRING, SCHEMA_IGNORED_DEFAULT, Importance.HIGH, SCHEMA_IGNORED_DOC)
+			.define(SCHEMA_URI_CONFIG, Type.STRING, SCHEMA_URI_CONFIG_DEFAULT, Importance.HIGH, SCHEMA_URI_CONFIG_DOC)
+			.define(SCHEMA_SUBJECT_CONFIG, Type.STRING, SCHEMA_SUBJECT_CONFIG_DEFAULT, Importance.MEDIUM, SCHEMA_SUBJECT_CONFIG_DOC)
+			.define(SCHEMA_VERSION_CONFIG, Type.STRING, SCHEMA_VERSION_CONFIG_DEFAULT,Importance.MEDIUM, SCHEMA_VERSION_CONFIG_DOC)
+			.define(CUID, Type.STRING, CUID_DEFAULT, Importance.MEDIUM, CUID_DOC);
 
 	private String topic;
 	private String fileLocation;
@@ -91,14 +111,12 @@ public class FileGenericSourceConnector extends SourceConnector {
 		schemaVersion = props.get(SCHEMA_VERSION_CONFIG);
 		cuid = props.get(CUID);
 
-		if (topic == null || topic.isEmpty())
+		if (topic.equalsIgnoreCase("n/a"))
 			throw new ConnectException("FileGenericSourceConnector configuration must include 'topic' setting");
 		if (topic.contains(","))
 			throw new ConnectException("FileGenericSourceConnector should only have a single topic when used as a source.");
-		if (fileLocation == null || fileLocation.isEmpty())
+		if (fileLocation.equalsIgnoreCase("n/a"))
 			throw new ConnectException("FileGenericSourceConnector configuration must include 'file.location' setting");
-		if (fileGlob == null || fileGlob.isEmpty())
-			throw new ConnectException("FileGenericSourceConnector configuration must include 'file.glob' setting");
 		if (fileInterval != null && !fileInterval.isEmpty()) {
 			try {
 				Integer.parseInt(fileInterval);
@@ -106,20 +124,12 @@ public class FileGenericSourceConnector extends SourceConnector {
 				throw new ConnectException("'file.glob.interval' must be a valid integer");
 			}
 		}
-        if (fileInterval == null || fileInterval.isEmpty())
-            fileInterval = "10";
-        if (fileOverwrite == null || fileOverwrite.isEmpty())
-            fileOverwrite = "FALSE";
-		if (schemaIgnored == null || schemaIgnored.isEmpty()) { // Do not ignore all schema info
-            schemaIgnored = "FALSE";
-            if (schemaUri == null || schemaUri.isEmpty()) {
-                throw new ConnectException("FileGenericSourceConnector configuration must include 'schema.registry.url' setting");
-            }
+		if (schemaIgnored.equalsIgnoreCase("FALSE")) { // Do not ignore all schema info
             if (schemaUri.endsWith("/"))
                 schemaUri = schemaUri.substring(0, schemaUri.length() - 1);
-            if (schemaSubject == null || schemaSubject.isEmpty())
+            if (schemaSubject.equalsIgnoreCase("n/a"))
                 schemaSubject = topic;
-            if (schemaVersion == null || schemaVersion.isEmpty())
+            if (schemaVersion.equalsIgnoreCase("n/a"))
                 schemaVersion = getLatestVersion(schemaUri, schemaSubject);
         } else { // Do ignore all schema info
             log.warn("The Schema is undefined. Avro Convert will create STRING schema at subject: " + topic + "_value");

@@ -27,6 +27,6 @@ the available schema (if any).
 * schema.ignored - If a file schema is ignored. When this property is **true**, all below schema information is ignored. 
 The schema registry will create a subject called topic_value with Schema.STRING. __(default : false)__ 
 * __schema.registry.uri__ - The URI to the Schema Registry  
-* schema.subject - The subject used to validate avro schema __(default : topic+"-value")__  
+* schema.subject - The subject used to validate avro schema __(default : topic)__
 * schema.version - The version of the subject to be used for schema validation __(default : latest version of the subject)__  
 
