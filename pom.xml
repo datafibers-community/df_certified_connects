@@ -10,6 +10,7 @@
         <module>df-connect-file-generic</module>
         <module>df-connect-file-schemaed</module>
         <module>df-connect-db-mongodb</module>
+        <module>df-connect-finance-stock</module>
     </modules>
 
     <properties>
