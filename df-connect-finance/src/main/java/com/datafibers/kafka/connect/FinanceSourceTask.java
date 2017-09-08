@@ -52,8 +52,8 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FinanceStockSourceTask extends SourceTask {
-    private static final Logger log = LoggerFactory.getLogger(FinanceStockSourceTask.class);
+public class FinanceSourceTask extends SourceTask {
+    private static final Logger log = LoggerFactory.getLogger(FinanceSourceTask.class);
 
     public static final String DF_METADATA_TOPIC = "df_meta";
     public static final String DF_METADATA_SCHEMA_SUBJECT = "df_meta";
@@ -93,17 +93,17 @@ public class FinanceStockSourceTask extends SourceTask {
 
     @Override
     public void start(Map<String, String> props) {
-        topic = props.get(FinanceStockSourceConnector.TOPIC_CONFIG);
-        location = props.get(FinanceStockSourceConnector.FILE_LOCATION_CONFIG);
-        glob = props.get(FinanceStockSourceConnector.FILE_LOCATION_CONFIG)
-                .concat(props.get(FinanceStockSourceConnector.FILE_GLOB_CONFIG));
-        interval = Integer.parseInt(props.get(FinanceStockSourceConnector.FILE_INTERVAL_CONFIG)) * 1000;
-        overwrite = Boolean.valueOf(props.get(FinanceStockSourceConnector.FILE_OVERWRITE_CONFIG));
-        cuid = props.get(FinanceStockSourceConnector.CUID);
+        topic = props.get(FinanceSourceConnector.TOPIC_CONFIG);
+        location = props.get(FinanceSourceConnector.FILE_LOCATION_CONFIG);
+        glob = props.get(FinanceSourceConnector.FILE_LOCATION_CONFIG)
+                .concat(props.get(FinanceSourceConnector.FILE_GLOB_CONFIG));
+        interval = Integer.parseInt(props.get(FinanceSourceConnector.FILE_INTERVAL_CONFIG)) * 1000;
+        overwrite = Boolean.valueOf(props.get(FinanceSourceConnector.FILE_OVERWRITE_CONFIG));
+        cuid = props.get(FinanceSourceConnector.CUID);
 
         findMatch();
-        schemaUri = props.get(FinanceStockSourceConnector.SCHEMA_URI_CONFIG);
-        String schemaIgnored = props.get(FinanceStockSourceConnector.SCHEMA_IGNORED);
+        schemaUri = props.get(FinanceSourceConnector.SCHEMA_URI_CONFIG);
+        String schemaIgnored = props.get(FinanceSourceConnector.SCHEMA_IGNORED);
 
         if (schemaIgnored.equalsIgnoreCase("true")) {
             schemaValidate = false;
@@ -111,8 +111,8 @@ public class FinanceStockSourceTask extends SourceTask {
         } else {
             // Get avro schema from registry and build proper schema POJO from it
             schemaValidate = true;
-            schemaSubject = props.get(FinanceStockSourceConnector.SCHEMA_SUBJECT_CONFIG);
-            schemaVersion = props.get(FinanceStockSourceConnector.SCHEMA_VERSION_CONFIG);
+            schemaSubject = props.get(FinanceSourceConnector.SCHEMA_SUBJECT_CONFIG);
+            schemaVersion = props.get(FinanceSourceConnector.SCHEMA_VERSION_CONFIG);
             dataSchema = getBuildSchema(schemaUri, schemaSubject, schemaVersion);
         }
     }
@@ -257,7 +257,7 @@ public class FinanceStockSourceTask extends SourceTask {
                     log.trace("Closed input stream");
                 }
             } catch (IOException e) {
-                log.error("Failed to close FinanceStockSourceTask stream: ", e);
+                log.error("Failed to close FinanceSourceTask stream: ", e);
             }
             this.notify();
         }

@@ -36,8 +36,8 @@ import org.codehaus.jackson.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FinanceStockSourceConnector extends SourceConnector {
-	private static final Logger log = LoggerFactory.getLogger(FinanceStockSourceConnector.class);
+public class FinanceSourceConnector extends SourceConnector {
+	private static final Logger log = LoggerFactory.getLogger(FinanceSourceConnector.class);
 
 	public static final String TOPIC_CONFIG = "topic";
 	public static final String TOPIC_CONFIG_DOC = "The topic to publish data to";
@@ -112,11 +112,11 @@ public class FinanceStockSourceConnector extends SourceConnector {
 		cuid = props.get(CUID);
 
 		if (topic == null || topic.equalsIgnoreCase("n/a"))
-			throw new ConnectException("FinanceStockSourceConnector configuration must include 'topic' setting");
+			throw new ConnectException("FinanceSourceConnector configuration must include 'topic' setting");
 		if (topic.contains(","))
-			throw new ConnectException("FinanceStockSourceConnector should only have a single topic when used as a source.");
+			throw new ConnectException("FinanceSourceConnector should only have a single topic when used as a source.");
 		if (fileLocation == null || fileLocation.equalsIgnoreCase("n/a"))
-			throw new ConnectException("FinanceStockSourceConnector configuration must include 'file.location' setting");
+			throw new ConnectException("FinanceSourceConnector configuration must include 'file.location' setting");
 		if (fileInterval != null && !fileInterval.isEmpty()) {
 			try {
 				Integer.parseInt(fileInterval);
@@ -145,7 +145,7 @@ public class FinanceStockSourceConnector extends SourceConnector {
 
 	@Override
 	public Class<? extends Task> taskClass() {
-		return FinanceStockSourceTask.class;
+		return FinanceSourceTask.class;
 	}
 
 	@Override
@@ -161,7 +161,7 @@ public class FinanceStockSourceConnector extends SourceConnector {
 		config.put(SCHEMA_SUBJECT_CONFIG, schemaSubject);
 		config.put(SCHEMA_VERSION_CONFIG, schemaVersion);
 		config.put(CUID, cuid);
-		log.info("FinanceStockSourceConnector value: {}", getValues(config));
+		log.info("FinanceSourceConnector value: {}", getValues(config));
 		return Arrays.asList(config);
 	}
 
