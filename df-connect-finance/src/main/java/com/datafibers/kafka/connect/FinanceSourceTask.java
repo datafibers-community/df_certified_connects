@@ -52,7 +52,6 @@ public class FinanceSourceTask extends SourceTask {
 
     private String topic;
     private String symbols;
-    private String portfolio;
     private int interval;
     private String spoofFlag;
     private String schemaUri;
@@ -68,12 +67,7 @@ public class FinanceSourceTask extends SourceTask {
     @Override
     public void start(Map<String, String> props) {
         topic = props.get(FinanceSourceConnector.TOPIC_CONFIG);
-        portfolio = props.get(FinanceSourceConnector.STOCK_PORTFOLIO_CONFIG);
-        if(!portfolio.equalsIgnoreCase("none")) {
-            symbols = YahooFinanceStockHelper.portfolio.get(portfolio);
-        } else {
-            symbols = props.get(FinanceSourceConnector.STOCK_SYMBOLS_CONFIG);
-        }
+        symbols = props.get(FinanceSourceConnector.STOCK_SYMBOLS_CONFIG);
         interval = Integer.parseInt(props.get(FinanceSourceConnector.REFRESH_INTERVAL_CONFIG)) * 1000;
         spoofFlag = props.get(FinanceSourceConnector.SPOOF_FLAG_CONFIG);
         cuid = props.get(FinanceSourceConnector.CUID);

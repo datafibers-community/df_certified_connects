@@ -21,6 +21,9 @@ public class YahooFinanceStockHelper {
         portfolio = new HashMap<>();
         portfolio.put("Top 10 IT Service", "ACN,CTSH,EPAM,GIB,DOX,SAIC,FORR,INFY,WIT,INXN");
         portfolio.put("Top 10 Technology", "GOOGL,MSFT,AMZN,BABA,ORCL,IBM,HPE,SAP,FB,EBAY");
+        portfolio.put("Top 10 US Banks", "ASB,BANC,BXS,BAC,BOH,BK,BBT,BNK,COF,C");
+        portfolio.put("Top 10 US Telecom", "WIN,FTR,CTL,CNSL,BCE,T,VZ,CHT,SHEN,ALSK");
+        portfolio.put("Top 10 Life Insurance", "AEK,AEG,SLF,MET,MFC,PRU,ANAT,FFG,LNC,PUK");
     }
 
     public static String getStockJson(String symbol, Boolean refresh) {

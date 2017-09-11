@@ -84,7 +84,6 @@ public class FinanceSourceConnector extends SourceConnector {
 	@Override
 	public void start(Map<String, String> props) {
 		topic = props.get(TOPIC_CONFIG);
-		stockSymbols = props.get(STOCK_SYMBOLS_CONFIG);
 		stockPortfolio = props.get(STOCK_PORTFOLIO_CONFIG);
 		refreshInterval = props.get(REFRESH_INTERVAL_CONFIG);
 		schemaUri = props.get(SCHEMA_URI_CONFIG);
@@ -96,6 +95,14 @@ public class FinanceSourceConnector extends SourceConnector {
 			topic = "topic_stock";
 		if (topic.contains(","))
 			throw new ConnectException("FinanceSourceConnector should only have a single topic when used as a source.");
+
+		if(!stockPortfolio.equalsIgnoreCase("none")) {
+			stockSymbols = YahooFinanceStockHelper.portfolio.get(stockPortfolio);
+		} else {
+			stockSymbols = props.get(STOCK_SYMBOLS_CONFIG);
+			if(stockSymbols == null) stockSymbols = "INTC,TSLA";
+		}
+
 		if (refreshInterval != null && !refreshInterval.isEmpty()) {
 			try {
 				Integer.parseInt(refreshInterval);
@@ -103,7 +110,7 @@ public class FinanceSourceConnector extends SourceConnector {
 				throw new ConnectException("'interval' must be a valid integer");
 			}
 		} else {
-			refreshInterval = "10";
+			refreshInterval = "20";
 		}
 
 		if (schemaUri.endsWith("/"))
