@@ -38,12 +38,12 @@ public class YahooFinanceStockHelper {
                     .put("symbol", stock.getSymbol())
                     .put("company_name", stock.getName())
                     .put("exchange", stock.getStockExchange())
-                    .put("open_price", stock.getQuote(refresh).getOpen().toString())
-                    .put("ask_price", stock.getQuote(refresh).getAsk().toString())
-                    .put("ask_size", stock.getQuote(refresh).getAskSize().toString())
-                    .put("bid_price", stock.getQuote(refresh).getBid().toString())
-                    .put("bid_size", stock.getQuote(refresh).getBidSize().toString())
-                    .put("price",  stock.getQuote(refresh).getPrice().toString());
+                    .put("ask_size", stock.getQuote(refresh).getAskSize().intValue())
+                    .put("bid_size", stock.getQuote(refresh).getBidSize().intValue())
+                    .put("open_price", Double.valueOf(stock.getQuote(refresh).getOpen().toString()))
+                    .put("ask_price", Double.valueOf(stock.getQuote(refresh).getAsk().toString()))
+                    .put("bid_price", Double.valueOf(stock.getQuote(refresh).getBid().toString()))
+                    .put("price",  Double.valueOf(stock.getQuote(refresh).getPrice().toString()));
             return stockJson.toString();
             } catch (IOException ioe) {
                 ioe.printStackTrace();
@@ -60,30 +60,29 @@ public class YahooFinanceStockHelper {
         if (source.equalsIgnoreCase("PAST")) {
             try {
                 Stock stock = YahooFinance.get(symbol);
-                // TODO need to find the 1st not null date in history and use it as spoof baseline
                 stockJson = new JSONObject().put("refresh_time", df.format(new Date()))
                         .put("symbol", stock.getSymbol())
                         .put("company_name", stock.getName() == null ?
                                 symbol + " Inc.":stock.getName())
                         .put("exchange", stock.getStockExchange())
-                        .put("open_price", (stock.getQuote().getOpen() == null ?
-                                BigDecimal.valueOf(30):stock.getQuote().getOpen())
-                                .add(BigDecimal.valueOf(rand.nextInt(10))).toString())
-                        .put("ask_price", (stock.getQuote().getAsk() == null ?
-                                BigDecimal.valueOf(30):stock.getQuote().getAsk())
-                                .add(BigDecimal.valueOf(rand.nextInt(10))).toString())
                         .put("ask_size", (stock.getQuote().getAskSize() == null ?
-                                Long.valueOf(30):stock.getQuote().getAskSize())
-                                + Long.valueOf(rand.nextInt(100)).toString())
-                        .put("bid_price", (stock.getQuote().getBid() == null ?
-                                BigDecimal.valueOf(50):stock.getQuote().getBid())
-                                .add(BigDecimal.valueOf(rand.nextInt(20))).toString())
+                                Integer.valueOf(30):stock.getQuote().getAskSize())
+                                + Integer.valueOf(rand.nextInt(100)))
                         .put("bid_size", (stock.getQuote().getBidSize() == null ?
-                                Long.valueOf(45):stock.getQuote().getBidSize())
-                                + Long.valueOf(rand.nextInt(200)).toString())
+                                Integer.valueOf(45):stock.getQuote().getBidSize())
+                                + Integer.valueOf(rand.nextInt(200)))
+                        .put("open_price", (stock.getQuote().getOpen() == null ?
+                                Double.valueOf(30):Double.valueOf(stock.getQuote().getOpen().toString()))
+                                * rand.nextDouble())
+                        .put("ask_price", (stock.getQuote().getAsk() == null ?
+                                Double.valueOf(30):Double.valueOf(stock.getQuote().getAsk().toString()))
+                                * rand.nextDouble())
+                        .put("bid_price", (stock.getQuote().getBid() == null ?
+                                Double.valueOf(50):Double.valueOf(stock.getQuote().getBid().toString()))
+                                * rand.nextDouble())
                         .put("price",  (stock.getQuote().getPrice() == null ?
-                                BigDecimal.valueOf(50):stock.getQuote().getPrice())
-                                .add(BigDecimal.valueOf(rand.nextInt(10))).toString())
+                                Double.valueOf(50):Double.valueOf(stock.getQuote().getPrice().toString()))
+                                * rand.nextDouble())
                 ;
 
             } catch (IOException ioe) {
@@ -94,12 +93,12 @@ public class YahooFinanceStockHelper {
                     .put("symbol", symbol)
                     .put("company_name", symbol)
                     .put("exchange", symbol)
-                    .put("open_price", BigDecimal.valueOf(rand.nextInt(105)).toString())
-                    .put("ask_price", BigDecimal.valueOf(rand.nextInt(102)).toString())
-                    .put("ask_size", Long.valueOf(rand.nextInt(130)).toString())
-                    .put("bid_price", BigDecimal.valueOf(rand.nextInt(200)).toString())
-                    .put("bid_size", Long.valueOf(rand.nextInt(230)).toString())
-                    .put("price",  BigDecimal.valueOf(rand.nextInt(120)).toString());
+                    .put("ask_size", Integer.valueOf(rand.nextInt(130)))
+                    .put("bid_size", Integer.valueOf(rand.nextInt(230)))
+                    .put("open_price", Double.valueOf(rand.nextDouble() * 105))
+                    .put("ask_price", Double.valueOf(rand.nextDouble() * 102))
+                    .put("bid_price", Double.valueOf(rand.nextDouble() * 200))
+                    .put("price",  Double.valueOf(rand.nextDouble() * 120));
         }
 
         return stockJson.toString();

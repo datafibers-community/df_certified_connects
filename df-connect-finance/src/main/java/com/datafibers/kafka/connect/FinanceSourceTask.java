@@ -132,6 +132,18 @@ public class FinanceSourceTask extends SourceTask {
                     innerBuilder.defaultValue(field.defaultValue().asLong());
                 break;
             }
+            case DOUBLE: {
+                innerBuilder = SchemaBuilder.float64();
+                if (hasDefault)
+                    innerBuilder.defaultValue(field.defaultValue().asDouble());
+                break;
+            }
+            case FLOAT:{
+                innerBuilder = SchemaBuilder.float32();
+                if (hasDefault)
+                    innerBuilder.defaultValue(field.defaultValue().asDouble());
+                break;
+            }
             case BOOLEAN: {
                 innerBuilder = SchemaBuilder.bool();
                 if (hasDefault)
@@ -182,7 +194,8 @@ public class FinanceSourceTask extends SourceTask {
                 org.apache.kafka.connect.data.Field theField = dataSchema.field(entry.getKey());
                 if (theField != null) {
                     switch (theField.schema().type()) {
-                        case STRING: {
+                        case STRING:
+                        case BYTES: {
                             value = entry.getValue().asText();
                             break;
                         }
@@ -192,6 +205,11 @@ public class FinanceSourceTask extends SourceTask {
                         }
                         case INT64: {
                             value = entry.getValue().asLong();
+                            break;
+                        }
+                        case FLOAT32:
+                        case FLOAT64: {
+                            value = entry.getValue().asDouble();
                             break;
                         }
                         case BOOLEAN: {
@@ -275,8 +293,20 @@ public class FinanceSourceTask extends SourceTask {
                 builder = SchemaBuilder.int64();
                 break;
             }
+            case FLOAT: {
+                builder = SchemaBuilder.float32();
+                break;
+            }
+            case DOUBLE: {
+                builder = SchemaBuilder.float64();
+                break;
+            }
             case BOOLEAN: {
                 builder = SchemaBuilder.bool();
+                break;
+            }
+            case BYTES: {
+                builder = SchemaBuilder.bytes();
                 break;
             }
             default:
@@ -326,12 +356,12 @@ public class FinanceSourceTask extends SourceTask {
                                         "{\"name\": \"symbol\", \"type\": \"string\"}," +
                                         "{\"name\": \"company_name\", \"type\": \"string\"}, " +
                                         "{\"name\": \"exchange\", \"type\": \"string\"}," +
-                                        "{\"name\": \"open_price\", \"type\": \"string\"}," +
-                                        "{\"name\": \"ask_price\", \"type\": \"string\"}," +
-                                        "{\"name\": \"ask_size\", \"type\": \"long\"}," +
-                                        "{\"name\": \"bid_price\", \"type\": \"string\"}," +
-                                        "{\"name\": \"bid_size\", \"type\": \"string\"}," +
-                                        "{\"name\": \"price\", \"type\": \"string\"}]}"
+                                        "{\"name\": \"open_price\", \"type\": \"double\"}," +
+                                        "{\"name\": \"ask_price\", \"type\": \"double\"}," +
+                                        "{\"name\": \"ask_size\", \"type\": \"int\"}," +
+                                        "{\"name\": \"bid_price\", \"type\": \"double\"}," +
+                                        "{\"name\": \"bid_size\", \"type\": \"int\"}," +
+                                        "{\"name\": \"price\", \"type\": \"double\"}]}"
                                 ).toString()
                         ).asString();
                 log.info("Subject - " + subject + " Not Found, so create it.");

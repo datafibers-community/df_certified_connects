@@ -34,6 +34,9 @@ public class SchemaUtils {
                 case FLOAT32:
                     jsonMap.put(fieldName, struct.getFloat32(fieldName));
                     break;
+                case FLOAT64:
+                    jsonMap.put(fieldName, struct.getFloat64(fieldName));
+                    break;
                 case STRUCT:
                     jsonMap.put(fieldName, toJsonMap(struct.getStruct(fieldName)));
                     break;

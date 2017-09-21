@@ -319,6 +319,18 @@ public class FileGenericSourceTask extends SourceTask {
                     innerBuilder.defaultValue(field.defaultValue().asLong());
                 break;
             }
+            case DOUBLE: {
+                innerBuilder = SchemaBuilder.float64();
+                if (hasDefault)
+                    innerBuilder.defaultValue(field.defaultValue().asDouble());
+                break;
+            }
+            case FLOAT: {
+                innerBuilder = SchemaBuilder.float32();
+                if (hasDefault)
+                    innerBuilder.defaultValue(field.defaultValue().asDouble());
+                break;
+            }
             case BOOLEAN: {
                 innerBuilder = SchemaBuilder.bool();
                 if (hasDefault)
@@ -427,7 +439,8 @@ public class FileGenericSourceTask extends SourceTask {
                 org.apache.kafka.connect.data.Field theField = dataSchema.field(entry.getKey());
                 if (theField != null) {
                     switch (theField.schema().type()) {
-                        case STRING: {
+                        case STRING:
+                        case BYTES: {
                             value = entry.getValue().asText();
                             break;
                         }
@@ -437,6 +450,11 @@ public class FileGenericSourceTask extends SourceTask {
                         }
                         case INT64: {
                             value = entry.getValue().asLong();
+                            break;
+                        }
+                        case FLOAT32:
+                        case FLOAT64: {
+                            value = entry.getValue().asDouble();
                             break;
                         }
                         case BOOLEAN: {
@@ -492,6 +510,15 @@ public class FileGenericSourceTask extends SourceTask {
                             }
                             case INT32: {
                                 value = Integer.parseInt(entry.get(index));
+                                break;
+                            }
+                            case INT64: {
+                                value = Long.parseLong(entry.get(index));
+                                break;
+                            }
+                            case FLOAT32:
+                            case FLOAT64: {
+                                value = Float.parseFloat(entry.get(index));
                                 break;
                             }
                             case BOOLEAN: {
@@ -612,8 +639,24 @@ public class FileGenericSourceTask extends SourceTask {
                 builder = SchemaBuilder.int32();
                 break;
             }
+            case LONG: {
+                builder = SchemaBuilder.int64();
+                break;
+            }
+            case FLOAT: {
+                builder = SchemaBuilder.float32();
+                break;
+            }
+            case DOUBLE: {
+                builder = SchemaBuilder.float64();
+                break;
+            }
             case BOOLEAN: {
                 builder = SchemaBuilder.bool();
+                break;
+            }
+            case BYTES: {
+                builder = SchemaBuilder.bytes();
                 break;
             }
             default:
