@@ -73,16 +73,16 @@ public class YahooFinanceStockHelper {
                                 + Integer.valueOf(rand.nextInt(200)))
                         .put("open_price", (stock.getQuote().getOpen() == null ?
                                 Double.valueOf(30):Double.valueOf(stock.getQuote().getOpen().toString()))
-                                * rand.nextDouble())
+                                * rand.nextInt(3)/2)
                         .put("ask_price", (stock.getQuote().getAsk() == null ?
                                 Double.valueOf(30):Double.valueOf(stock.getQuote().getAsk().toString()))
-                                * rand.nextDouble())
+                                * rand.nextInt(3)/2)
                         .put("bid_price", (stock.getQuote().getBid() == null ?
                                 Double.valueOf(50):Double.valueOf(stock.getQuote().getBid().toString()))
-                                * rand.nextDouble())
+                                * rand.nextInt(3)/2)
                         .put("price",  (stock.getQuote().getPrice() == null ?
                                 Double.valueOf(50):Double.valueOf(stock.getQuote().getPrice().toString()))
-                                * rand.nextDouble())
+                                * rand.nextInt(3)/2)
                 ;
 
             } catch (IOException ioe) {
@@ -95,10 +95,10 @@ public class YahooFinanceStockHelper {
                     .put("exchange", symbol)
                     .put("ask_size", Integer.valueOf(rand.nextInt(130)))
                     .put("bid_size", Integer.valueOf(rand.nextInt(230)))
-                    .put("open_price", Double.valueOf(rand.nextDouble() * 105))
-                    .put("ask_price", Double.valueOf(rand.nextDouble() * 102))
-                    .put("bid_price", Double.valueOf(rand.nextDouble() * 200))
-                    .put("price",  Double.valueOf(rand.nextDouble() * 120));
+                    .put("open_price", Double.valueOf(rand.nextInt(3) * 105/2))
+                    .put("ask_price", Double.valueOf(rand.nextInt(3) * 102/2))
+                    .put("bid_price", Double.valueOf(rand.nextInt(3) * 200/2))
+                    .put("price",  Double.valueOf(rand.nextInt(3) * 120/2));
         }
 
         return stockJson.toString();
