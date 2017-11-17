@@ -21,7 +21,7 @@ public class YahooFinanceStockHelper {
         portfolio = new HashMap<>();
         portfolio.put("Top 10 IT Service", "ACN,CTSH,EPAM,GIB,DOX,SAIC,FORR,INFY,WIT,INXN");
         portfolio.put("Top 10 Technology", "GOOGL,MSFT,AMZN,BABA,ORCL,IBM,HPE,SAP,FB,EBAY");
-        portfolio.put("Top 10 US Banks", "ASB,BANC,BXS,BAC,BOH,BK,BBT,BNK,COF,C");
+        portfolio.put("Top 10 US Banks", "ASB,BANC,BXS,BAC,BOH,BK,BBT,JPM,COF,C");
         portfolio.put("Top 10 US Telecom", "WIN,FTR,CTL,CNSL,BCE,T,VZ,CHT,SHEN,ALSK");
         portfolio.put("Top 10 Life Insurance", "AEK,AEG,SLF,MET,MFC,PRU,ANAT,FFG,LNC,PUK");
     }
@@ -105,18 +105,7 @@ public class YahooFinanceStockHelper {
     }
 
     public static void main(String [] args) {
-        try {
-            Calendar from = Calendar.getInstance();
-            Calendar to = Calendar.getInstance();
-            from.add(Calendar.MONTH, -1); // from 5 years ago
-
-            Stock google = YahooFinance.get("BABA", from, to, Interval.DAILY);
-            System.out.println(google.getHistory().get(0).getClose());
-
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-        }
-        String[] symbols = new String[]{"INTC", "TSLA", "AIR.PA", "YHOO"};
+        String[] symbols = YahooFinanceStockHelper.portfolio.get("Top 10 Life Insurance").split(",");
         for (String symbol : symbols) {
             //System.out.println(YahooFinanceStockHelper.getStockJson(symbol, true));
             System.out.println(YahooFinanceStockHelper.getFakedStockJson(symbol, "PAST"));
