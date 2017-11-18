@@ -19,7 +19,7 @@
         <dependency>
             <groupId>com.yahoofinance-api</groupId>
             <artifactId>YahooFinanceAPI</artifactId>
-            <version>3.9.0</version>
+            <version>3.12.2</version>
         </dependency>
         <dependency>
             <groupId>com.mashape.unirest</groupId>
