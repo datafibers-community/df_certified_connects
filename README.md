@@ -7,6 +7,8 @@ It contains following connectors worked with DataFibers. Added links in case we 
 * [connect-file-generic]()
 * [connect-file-schemaed]()
 * [connect-db-mongodb](https://github.com/DataReply/kafka-connect-mongodb)
+* [connect-fiance]()
+* [connect-ukmeetoffice]()
 
 ## Convention
 All of the drivers, either connect or jdbc, must end file name with dependencies.jar in order to be picked up by DataFibers.

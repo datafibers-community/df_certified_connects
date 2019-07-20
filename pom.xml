@@ -11,6 +11,7 @@
         <module>df-connect-file-schemaed</module>
         <module>df-connect-db-mongodb</module>
         <module>df-connect-finance</module>
+        <module>df-connect-ukmeetoffice</module>
     </modules>
 
     <properties>
