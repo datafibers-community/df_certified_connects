@@ -7,8 +7,8 @@ SourceRecords.
 
 ### Config Values ###
 * __topic__ - The topic to publish data to
-* __symbols__ - How often to check for new file(s) to be processed
-* __interval__ - If a file is modified should it be republished to kafka __(default : 10 seconds)__
+* __symbols__ - List of stock symbols to process
+* __interval__ - How often to check for new file(s) to be processed
 * __spoofFlag__ - [PAST|NONE|OTHER] **true**, all below schema information is ignored.
 The schema registry will create a subject called topic_value with Schema.STRING. __(default : false)__ 
 * __schema.registry.uri__ - The URI to the Schema Registry  
