@@ -223,7 +223,7 @@ public class UKMEETSourceTask extends SourceTask {
                                 log.info("Sending Kafka message =" + msgToKafka);
                             }
                         }
-                        if(!purgeFlag.equalsIgnoreCase("n")) {
+                        if(!purgeFlag.equalsIgnoreCase("false")) {
                             sqs.deleteMessage(new DeleteMessageRequest(sqsURL, message.getReceiptHandle()));
                             FileUtils.forceDelete(new File(fileLongName));
                             log.info("The message/temp file are deleted from SQS/" + s3DownloadDir);

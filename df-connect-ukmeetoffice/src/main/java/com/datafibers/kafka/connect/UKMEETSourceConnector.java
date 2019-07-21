@@ -52,7 +52,7 @@ public class UKMEETSourceConnector extends SourceConnector {
 	public static final String SCHEMA_SUBJECT_CONFIG_DEFAULT = "n/a";
 	public static final String PURGE_FLAG_CONFIG = "purge";
 	public static final String PURGE_FLAG_CONFIG_DOC = "If delete message from aws sqs";
-	public static final String PURGE_FLAG_CONFIG_DEFAULT = "y";
+	public static final String PURGE_FLAG_CONFIG_DEFAULT = "true";
 
 	public static final String SQS_URL_CONFIG = "sqs.url";
 	public static final String SQS_URL_CONFIG_DOC = "aws sqs url";
