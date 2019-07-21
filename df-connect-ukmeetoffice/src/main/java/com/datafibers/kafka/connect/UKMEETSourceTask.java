@@ -174,7 +174,7 @@ public class UKMEETSourceTask extends SourceTask {
                         FileUtils.copyInputStreamToFile(inputStream, new File(file_path_name));
                         log.info(file_name + " is downloaded and start processing ");
 
-                        NetcdfFile dataFile = NetcdfFile.open(fileName, null);
+                        NetcdfFile dataFile = NetcdfFile.open(file_path_name, null);
 
                         // read the target variables
                         Variable pressureVar = dataFile.findVariable(fileName);
