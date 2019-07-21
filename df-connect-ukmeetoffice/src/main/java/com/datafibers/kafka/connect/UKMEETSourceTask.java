@@ -32,6 +32,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.mashape.unirest.http.HttpResponse;
@@ -171,7 +172,6 @@ public class UKMEETSourceTask extends SourceTask {
                         S3ObjectInputStream inputStream = s3object.getObjectContent();
 
                         FileUtils.copyInputStreamToFile(inputStream, new File(file_path_name));
-
                         log.info(file_name + " is downloaded and start processing ");
 
                         NetcdfFile dataFile = NetcdfFile.open(fileName, null);
@@ -221,9 +221,14 @@ public class UKMEETSourceTask extends SourceTask {
                                 log.info("Sending Kafka message =" + msgToKafka);
                             }
                         }
+                        if(!purgeFlag.equalsIgnoreCase("n")) {
+                            sqs.deleteMessage(new DeleteMessageRequest(sqsURL, message.getReceiptHandle()));
+                            log.info("The message is deleted from SQS");
+                        }
                         break;
                     }
                 }
+
         } catch (IOException ioe) {
                 ioe.printStackTrace();
         }
