@@ -164,15 +164,15 @@ public class UKMEETSourceTask extends SourceTask {
                     //System.out.println("index=" + i);
                     if (msg.getString("name").equalsIgnoreCase(fileName)) {
                         //downloading an object to file
-                        String file_name = msg.getString("name") + "_" +
+                        String file_long_name = msg.getString("name") + "_" +
                                 msg.getString("created_time") + "_" +
                                 msg.getString("key");
-                        String file_path_name = s3DownloadDir + "/" + file_name;
+                        String file_path_name = s3DownloadDir + "/" + file_long_name;
                         S3Object s3object = s3client.getObject(s3Bucket, msg.getString("key"));
                         S3ObjectInputStream inputStream = s3object.getObjectContent();
 
                         FileUtils.copyInputStreamToFile(inputStream, new File(file_path_name));
-                        log.info(file_name + " is downloaded and start processing ");
+                        log.info(file_long_name + " is downloaded and start processing ");
 
                         NetcdfFile dataFile = NetcdfFile.open(file_path_name, null);
 
@@ -215,7 +215,7 @@ public class UKMEETSourceTask extends SourceTask {
                                         .put("pressure", pressure.get(0, y, x)).toString();
 
                                 records.add(
-                                        new SourceRecord(offsetKey(fileName),
+                                        new SourceRecord(offsetKey(file_long_name),
                                         offsetValue("y=" + yLength + ", x=" + xLength), topic,
                                         dataSchema, structDecodingFromJson(msgToKafka)));
                                 log.info("Sending Kafka message =" + msgToKafka);
@@ -223,7 +223,8 @@ public class UKMEETSourceTask extends SourceTask {
                         }
                         if(!purgeFlag.equalsIgnoreCase("n")) {
                             sqs.deleteMessage(new DeleteMessageRequest(sqsURL, message.getReceiptHandle()));
-                            log.info("The message is deleted from SQS");
+                            FileUtils.forceDelete(new File(file_long_name));
+                            log.info("The message/temp file are deleted from SQS/" + s3DownloadDir);
                         }
                         break;
                     }
