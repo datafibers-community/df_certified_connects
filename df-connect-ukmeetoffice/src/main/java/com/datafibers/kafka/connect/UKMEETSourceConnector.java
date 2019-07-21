@@ -38,8 +38,8 @@ public class UKMEETSourceConnector extends SourceConnector {
 	public static final String TOPIC_CONFIG = "topic";
 	public static final String TOPIC_CONFIG_DOC = "The topic to publish data to";
 	public static final String TOPIC_CONFIG_DEFAULT = "air_pressure";
-	public static final String FILE_NAME_CONFIG = "name";
-	public static final String FILE_NAME_CONFIG_DOC = "The file name to process which is also equal to key target variable";
+	public static final String FILE_NAME_CONFIG = "prefix";
+	public static final String FILE_NAME_CONFIG_DOC = "The file prefix name to process which is also equal to key target variable";
 	public static final String FILE_NAME_CONFIG_DEFAULT = "surface_air_pressure";
 	public static final String REFRESH_INTERVAL_CONFIG = "interval";
 	public static final String REFRESH_INTERVAL_CONFIG_DOC = "How often to check stock update in seconds.";
@@ -59,14 +59,14 @@ public class UKMEETSourceConnector extends SourceConnector {
 	public static final String SQS_URL_CONFIG_DEFAULT = "https://sqs.us-east-2.amazonaws.com/520169828690/netcdf-queue";
 	public static final String SQS_REGION_CONFIG = "sqs.region";
 	public static final String SQS_REGION_CONFIG_DOC = "aws sqs region";
-	public static final String SQS_REGION_CONFIG_DEFAULT = "US_EAST_2";
+	public static final String SQS_REGION_CONFIG_DEFAULT = "us-east-1";
 
 	public static final String S3_BUCKET_CONFIG = "s3.bucket";
 	public static final String S3_BUCKET_CONFIG_DOC = "aws s3 bucket to get the file";
 	public static final String S3_BUCKET_CONFIG_DEFAULT = "aws-earth-mo-atmospheric-mogreps-uk-prd";
 	public static final String S3_REGION_CONFIG = "s3.region";
 	public static final String S3_REGION_CONFIG_DOC = "aws s3 region";
-	public static final String S3_REGION_CONFIG_DEFAULT = "EU_WEST_2";
+	public static final String S3_REGION_CONFIG_DEFAULT = "eu-west-2";
 	public static final String S3_DOWNDIR_CONFIG = "s3.downloaddir";
 	public static final String S3_DOWNDIR_CONFIG_DOC = "local path where to keep the file downloaded from s3";
 	public static final String S3_DOWNDIR_CONFIG_DEFAULT = "/tmp/s3downloaded";
