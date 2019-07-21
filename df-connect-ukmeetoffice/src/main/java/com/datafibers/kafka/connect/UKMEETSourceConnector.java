@@ -39,7 +39,7 @@ public class UKMEETSourceConnector extends SourceConnector {
 	public static final String TOPIC_CONFIG_DOC = "The topic to publish data to";
 	public static final String TOPIC_CONFIG_DEFAULT = "air_pressure";
 	public static final String FILE_NAME_CONFIG = "name";
-	public static final String FILE_NAME_CONFIG_DOC = "The file name to process";
+	public static final String FILE_NAME_CONFIG_DOC = "The file name to process which is also equal to key target variable";
 	public static final String FILE_NAME_CONFIG_DEFAULT = "surface_air_pressure";
 	public static final String REFRESH_INTERVAL_CONFIG = "interval";
 	public static final String REFRESH_INTERVAL_CONFIG_DOC = "How often to check stock update in seconds.";

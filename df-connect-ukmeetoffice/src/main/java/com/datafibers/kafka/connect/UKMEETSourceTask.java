@@ -177,7 +177,7 @@ public class UKMEETSourceTask extends SourceTask {
                         NetcdfFile dataFile = NetcdfFile.open(fileName, null);
 
                         // read the target variables
-                        Variable pressureVar = dataFile.findVariable("surface_air_pressure");
+                        Variable pressureVar = dataFile.findVariable(fileName);
                         Variable yVar = dataFile.findVariable("projection_y_coordinate");
                         Variable xVar = dataFile.findVariable("projection_x_coordinate");
 
