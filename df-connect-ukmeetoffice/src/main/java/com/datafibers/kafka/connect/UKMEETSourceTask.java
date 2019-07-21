@@ -164,20 +164,20 @@ public class UKMEETSourceTask extends SourceTask {
                     //System.out.println("index=" + i);
                     if (msg.getString("name").equalsIgnoreCase(fileName)) {
                         //downloading an object to file
-                        String file_long_name = msg.getString("name") + "_" +
-                                msg.getString("created_time") + "_" +
-                                msg.getString("key");
-                        String file_path_name = s3DownloadDir + "/" + file_long_name;
+                        String fileCreationTime = msg.getString("created_time");
+                        String fileLongName = msg.getString("name") + "_" +
+                                fileCreationTime + "_" + msg.getString("key");
+                        String filePathName = s3DownloadDir + "/" + fileLongName;
                         S3Object s3object = s3client.getObject(s3Bucket, msg.getString("key"));
                         S3ObjectInputStream inputStream = s3object.getObjectContent();
 
-                        FileUtils.copyInputStreamToFile(inputStream, new File(file_path_name));
-                        log.info(file_long_name + " is downloaded and start processing ");
+                        FileUtils.copyInputStreamToFile(inputStream, new File(filePathName));
+                        log.info(fileLongName + " is downloaded and start processing ");
 
-                        NetcdfFile dataFile = NetcdfFile.open(file_path_name, null);
+                        NetcdfFile dataFile = NetcdfFile.open(filePathName, null);
 
                         // read the target variables
-                        Variable pressureVar = dataFile.findVariable(fileName);
+                        Variable pressureVar = dataFile.findVariable(fileName); // Use fileName(Prefix) to match KPI TODO: Improve
                         Variable yVar = dataFile.findVariable("projection_y_coordinate");
                         Variable xVar = dataFile.findVariable("projection_x_coordinate");
 
@@ -207,7 +207,9 @@ public class UKMEETSourceTask extends SourceTask {
                             for (int x = 0; x < xLength; x++) {
                                 // do something with the data
                                 msgToKafka = new JSONObject()
-                                        .put("file_name", fileName)
+                                        .put("file_prefix", fileName)
+                                        .put("file_name", fileLongName)
+                                        .put("file_creation", fileCreationTime)
                                         .put("x_coord", xCoord.get(x))
                                         .put("y_coord", yCoord.get(y))
                                         .put("time", timeCoord.get())
@@ -215,7 +217,7 @@ public class UKMEETSourceTask extends SourceTask {
                                         .put("pressure", pressure.get(0, y, x)).toString();
 
                                 records.add(
-                                        new SourceRecord(offsetKey(file_long_name),
+                                        new SourceRecord(offsetKey(fileLongName),
                                         offsetValue("y=" + yLength + ", x=" + xLength), topic,
                                         dataSchema, structDecodingFromJson(msgToKafka)));
                                 log.info("Sending Kafka message =" + msgToKafka);
@@ -223,7 +225,7 @@ public class UKMEETSourceTask extends SourceTask {
                         }
                         if(!purgeFlag.equalsIgnoreCase("n")) {
                             sqs.deleteMessage(new DeleteMessageRequest(sqsURL, message.getReceiptHandle()));
-                            FileUtils.forceDelete(new File(file_long_name));
+                            FileUtils.forceDelete(new File(fileLongName));
                             log.info("The message/temp file are deleted from SQS/" + s3DownloadDir);
                         }
                         break;
@@ -488,7 +490,9 @@ public class UKMEETSourceTask extends SourceTask {
                                 "{\"type\":\"record\"," +
                                         "\"name\": \"" + subject + "\"," +
                                         "\"fields\":[" +
+                                        "{\"name\": \"file_prefix\", \"type\":\"string\"}," +
                                         "{\"name\": \"file_name\", \"type\":\"string\"}," +
+                                        "{\"name\": \"file_creation\", \"type\":\"string\"}," +
                                         "{\"name\": \"x_coord\", \"type\": \"double\"}," +
                                         "{\"name\": \"y_coord\", \"type\": \"double\"}, " +
                                         "{\"name\": \"time\", \"type\": \"double\"}," +
