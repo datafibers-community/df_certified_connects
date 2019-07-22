@@ -72,7 +72,10 @@ public class UKMEETSourceTask extends SourceTask {
     public static final int SQS_MESSASGE_POLL_RATE= 1; // Max is 10
 
     private String topic;
-    private String fileName;
+    private String filePrefix;
+    private String fileVar;
+    private String fileCoordY;
+    private String fileCoordX;
     private int interval;
     private String purgeFlag;
     private String schemaUri;
@@ -99,7 +102,10 @@ public class UKMEETSourceTask extends SourceTask {
     @Override
     public void start(Map<String, String> props) {
         topic = props.get(UKMEETSourceConnector.TOPIC_CONFIG);
-        fileName = props.get(UKMEETSourceConnector.FILE_NAME_CONFIG);
+        filePrefix = props.get(UKMEETSourceConnector.FILE_PREFIX_CONFIG);
+        fileVar = props.get(UKMEETSourceConnector.FILE_VAR_CONFIG);
+        fileCoordY = props.get(UKMEETSourceConnector.FILE_COORD_CONFIG).split(",")[0];
+        fileCoordX = props.get(UKMEETSourceConnector.FILE_COORD_CONFIG).split(",")[1];
         interval = Integer.parseInt(props.get(UKMEETSourceConnector.REFRESH_INTERVAL_CONFIG)) * 1000;
         purgeFlag = props.get(UKMEETSourceConnector.PURGE_FLAG_CONFIG);
         cuid = props.get(UKMEETSourceConnector.CUID);
@@ -162,7 +168,7 @@ public class UKMEETSourceTask extends SourceTask {
                     //System.out.println("file_created_time=" + msg.getString("created_time"));
                     //System.out.println("forecast_reference_time=" + msg.getString("forecast_reference_time"));
                     //System.out.println("index=" + i);
-                    if (msg.getString("name").equalsIgnoreCase(fileName)) {
+                    if (msg.getString("name").equalsIgnoreCase(filePrefix)) {
                         //downloading an object to file
                         String fileCreationTime = msg.getString("created_time");
                         String fileLongName = msg.getString("name") + "_" +
@@ -177,9 +183,9 @@ public class UKMEETSourceTask extends SourceTask {
                         NetcdfFile dataFile = NetcdfFile.open(filePathName, null);
 
                         // read the target variables
-                        Variable pressureVar = dataFile.findVariable(fileName); // Use fileName(Prefix) to match KPI TODO: Improve
-                        Variable yVar = dataFile.findVariable("projection_y_coordinate");
-                        Variable xVar = dataFile.findVariable("projection_x_coordinate");
+                        Variable targetVar = dataFile.findVariable(fileVar);
+                        Variable yVar = dataFile.findVariable(fileCoordY);
+                        Variable xVar = dataFile.findVariable(fileCoordX);
 
                         // Read the valid time and forecast time
                         Variable time = dataFile.findVariable("time");
@@ -193,7 +199,7 @@ public class UKMEETSourceTask extends SourceTask {
                         ArrayFloat.D1 xCoord = (ArrayFloat.D1) xVar.read();
 
                         // Read the pressure data
-                        ArrayFloat.D3 pressure = (ArrayFloat.D3) pressureVar.read();
+                        ArrayFloat.D3 target = (ArrayFloat.D3) targetVar.read();
 
                         // dimensions of the y/x array
                         List<Dimension> dimensions = dataFile.getDimensions();
@@ -207,14 +213,14 @@ public class UKMEETSourceTask extends SourceTask {
                             for (int x = 0; x < xLength; x++) {
                                 // do something with the data
                                 msgToKafka = new JSONObject()
-                                        .put("file_prefix", fileName)
+                                        .put("file_prefix", filePrefix)
                                         .put("file_name", fileLongName)
                                         .put("file_creation", fileCreationTime)
-                                        .put("x_coord", xCoord.get(x))
-                                        .put("y_coord", yCoord.get(y))
+                                        .put(fileCoordY, yCoord.get(y))
+                                        .put(fileCoordX, xCoord.get(x))
                                         .put("time", timeCoord.get())
                                         .put("forecast", forecastTimeCoord.get())
-                                        .put("pressure", pressure.get(0, y, x)).toString();
+                                        .put(fileVar, target.get(0, y, x)).toString();
 
                                 records.add(
                                         new SourceRecord(offsetKey(fileLongName),
@@ -493,11 +499,11 @@ public class UKMEETSourceTask extends SourceTask {
                                         "{\"name\": \"file_prefix\", \"type\":\"string\"}," +
                                         "{\"name\": \"file_name\", \"type\":\"string\"}," +
                                         "{\"name\": \"file_creation\", \"type\":\"string\"}," +
-                                        "{\"name\": \"x_coord\", \"type\": \"double\"}," +
-                                        "{\"name\": \"y_coord\", \"type\": \"double\"}, " +
+                                        "{\"name\": \"" + fileCoordY + "\", \"type\": \"double\"}," +
+                                        "{\"name\": \"" + fileCoordX + "\", \"type\": \"double\"}, " +
                                         "{\"name\": \"time\", \"type\": \"double\"}," +
                                         "{\"name\": \"forecast\", \"type\": \"double\"}," +
-                                        "{\"name\": \"pressure\", \"type\": \"double\"}]}"
+                                        "{\"name\": \"" + fileVar + "\", \"type\": \"double\"}]}"
                                 ).toString()
                         ).asString();
                 log.info("Subject - " + subject + " Not Found, so create it.");

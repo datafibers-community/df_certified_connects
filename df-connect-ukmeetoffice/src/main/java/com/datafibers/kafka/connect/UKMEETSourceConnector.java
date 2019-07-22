@@ -38,9 +38,16 @@ public class UKMEETSourceConnector extends SourceConnector {
 	public static final String TOPIC_CONFIG = "topic";
 	public static final String TOPIC_CONFIG_DOC = "The topic to publish data to";
 	public static final String TOPIC_CONFIG_DEFAULT = "air_pressure";
-	public static final String FILE_NAME_CONFIG = "prefix";
-	public static final String FILE_NAME_CONFIG_DOC = "The file prefix name to process which is also equal to key target variable";
-	public static final String FILE_NAME_CONFIG_DEFAULT = "surface_air_pressure";
+
+	public static final String FILE_PREFIX_CONFIG = "prefix";
+	public static final String FILE_PREFIX_CONFIG_DOC = "The file prefix name to process which is also equal to key target variable";
+	public static final String FILE_PREFIX_CONFIG_DEFAULT = "surface_air_pressure";
+	public static final String FILE_VAR_CONFIG = "var";
+	public static final String FILE_VAR_CONFIG_DOC = "The core variable in the file for analysis, default equal to prefix usually";
+	public static final String FILE_COORD_CONFIG = "coord";
+	public static final String FILE_COORD_CONFIG_DOC = "The name of coordination system separated by comma";
+	public static final String FILE_COORD_CONFIG_DEFAULT = "projection_y_coordinate,projection_x_coordinate";
+
 	public static final String REFRESH_INTERVAL_CONFIG = "interval";
 	public static final String REFRESH_INTERVAL_CONFIG_DOC = "How often to check stock update in seconds.";
 	public static final String REFRESH_INTERVAL_CONFIG_DEFAULT = "20";
@@ -77,7 +84,9 @@ public class UKMEETSourceConnector extends SourceConnector {
 
 	private static final ConfigDef CONFIG_DEF = new ConfigDef()
 			.define(TOPIC_CONFIG, Type.STRING, TOPIC_CONFIG_DEFAULT, Importance.HIGH, TOPIC_CONFIG_DOC)
-			.define(FILE_NAME_CONFIG, Type.STRING, FILE_NAME_CONFIG_DEFAULT, Importance.HIGH, FILE_NAME_CONFIG_DOC)
+			.define(FILE_PREFIX_CONFIG, Type.STRING, FILE_PREFIX_CONFIG_DEFAULT, Importance.HIGH, FILE_PREFIX_CONFIG_DOC)
+			.define(FILE_VAR_CONFIG, Type.STRING, FILE_PREFIX_CONFIG_DEFAULT, Importance.HIGH, FILE_VAR_CONFIG_DOC)
+			.define(FILE_COORD_CONFIG, Type.STRING, FILE_COORD_CONFIG_DEFAULT, Importance.HIGH, FILE_COORD_CONFIG_DOC)
 			.define(REFRESH_INTERVAL_CONFIG, Type.STRING, REFRESH_INTERVAL_CONFIG_DEFAULT, Importance.MEDIUM, REFRESH_INTERVAL_CONFIG_DOC)
 			.define(SCHEMA_URI_CONFIG, Type.STRING, SCHEMA_URI_CONFIG_DEFAULT, Importance.HIGH, SCHEMA_URI_CONFIG_DOC)
 			.define(SCHEMA_SUBJECT_CONFIG, Type.STRING, SCHEMA_SUBJECT_CONFIG_DEFAULT, Importance.HIGH, SCHEMA_SUBJECT_CONFIG_DOC)
@@ -90,7 +99,9 @@ public class UKMEETSourceConnector extends SourceConnector {
 			.define(CUID, Type.STRING, CUID_DEFAULT, Importance.MEDIUM, CUID_DOC);
 
 	private String topic;
-	private String fileName;
+	private String filePrefix;
+	private String fileVar;
+	private String fileCoord;
 	private String refreshInterval;
 	private String schemaUri;
 	private String schemaSubject;
@@ -110,7 +121,9 @@ public class UKMEETSourceConnector extends SourceConnector {
 	@Override
 	public void start(Map<String, String> props) {
 		topic = props.getOrDefault(TOPIC_CONFIG, TOPIC_CONFIG_DEFAULT);
-		fileName = props.getOrDefault(FILE_NAME_CONFIG, FILE_NAME_CONFIG_DEFAULT);
+		filePrefix = props.getOrDefault(FILE_PREFIX_CONFIG, FILE_PREFIX_CONFIG_DEFAULT);
+		fileVar = props.getOrDefault(FILE_VAR_CONFIG, filePrefix);
+		fileCoord = props.getOrDefault(FILE_COORD_CONFIG, FILE_COORD_CONFIG_DEFAULT);
 		refreshInterval = props.getOrDefault(REFRESH_INTERVAL_CONFIG, REFRESH_INTERVAL_CONFIG_DEFAULT);
 		schemaUri = props.getOrDefault(SCHEMA_URI_CONFIG, SCHEMA_URI_CONFIG_DEFAULT);
 		schemaSubject = props.getOrDefault(SCHEMA_SUBJECT_CONFIG, SCHEMA_SUBJECT_CONFIG_DEFAULT);
@@ -157,7 +170,9 @@ public class UKMEETSourceConnector extends SourceConnector {
 	public List<Map<String, String>> taskConfigs(int maxTasks) {
 		Map<String, String> config = new HashMap<String, String>();
 		config.put(TOPIC_CONFIG, topic);
-		config.put(FILE_NAME_CONFIG, fileName);
+		config.put(FILE_PREFIX_CONFIG, filePrefix);
+		config.put(FILE_VAR_CONFIG, fileVar);
+		config.put(FILE_COORD_CONFIG, fileCoord);
 		config.put(REFRESH_INTERVAL_CONFIG, refreshInterval);
 		config.put(SCHEMA_URI_CONFIG, schemaUri);
 		config.put(SCHEMA_SUBJECT_CONFIG, schemaSubject);
