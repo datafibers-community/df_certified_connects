@@ -61,9 +61,9 @@ public class UKMEETSourceConnector extends SourceConnector {
 	public static final String PURGE_FLAG_CONFIG_DOC = "If delete message from aws sqs";
 	public static final String PURGE_FLAG_CONFIG_DEFAULT = "true";
 
-	public static final String SQS_URL_CONFIG = "sqs.url";
-	public static final String SQS_URL_CONFIG_DOC = "aws sqs url";
-	public static final String SQS_URL_CONFIG_DEFAULT = "https://sqs.us-east-2.amazonaws.com/520169828690/netcdf-queue";
+	public static final String SQS_URI_CONFIG = "sqs.uri";
+	public static final String SQS_URI_CONFIG_DOC = "aws sqs uri";
+	public static final String SQS_URI_CONFIG_DEFAULT = "https://sqs.us-east-2.amazonaws.com/520169828690/netcdf-queue";
 	public static final String SQS_REGION_CONFIG = "sqs.region";
 	public static final String SQS_REGION_CONFIG_DOC = "aws sqs region";
 	public static final String SQS_REGION_CONFIG_DEFAULT = "us-east-1";
@@ -91,7 +91,7 @@ public class UKMEETSourceConnector extends SourceConnector {
 			.define(SCHEMA_URI_CONFIG, Type.STRING, SCHEMA_URI_CONFIG_DEFAULT, Importance.HIGH, SCHEMA_URI_CONFIG_DOC)
 			.define(SCHEMA_SUBJECT_CONFIG, Type.STRING, SCHEMA_SUBJECT_CONFIG_DEFAULT, Importance.HIGH, SCHEMA_SUBJECT_CONFIG_DOC)
 			.define(PURGE_FLAG_CONFIG, Type.STRING, PURGE_FLAG_CONFIG_DEFAULT, Importance.LOW, PURGE_FLAG_CONFIG_DOC)
-			.define(SQS_URL_CONFIG, Type.STRING, SQS_URL_CONFIG_DEFAULT, Importance.MEDIUM, SQS_URL_CONFIG_DOC)
+			.define(SQS_URI_CONFIG, Type.STRING, SQS_URI_CONFIG_DEFAULT, Importance.MEDIUM, SQS_URI_CONFIG_DOC)
 			.define(SQS_REGION_CONFIG, Type.STRING, SQS_REGION_CONFIG_DEFAULT, Importance.MEDIUM, SQS_REGION_CONFIG_DOC)
 			.define(S3_BUCKET_CONFIG, Type.STRING, S3_BUCKET_CONFIG_DEFAULT, Importance.MEDIUM, S3_BUCKET_CONFIG_DOC)
 			.define(S3_REGION_CONFIG, Type.STRING, S3_REGION_CONFIG_DEFAULT, Importance.MEDIUM, S3_REGION_CONFIG_DOC)
@@ -106,7 +106,7 @@ public class UKMEETSourceConnector extends SourceConnector {
 	private String schemaUri;
 	private String schemaSubject;
 	private String purgeFlag;
-	private String sqsURL;
+	private String sqsURI;
 	private String sqsRegion;
 	private String s3Bucket;
 	private String s3Region;
@@ -128,7 +128,7 @@ public class UKMEETSourceConnector extends SourceConnector {
 		schemaUri = props.getOrDefault(SCHEMA_URI_CONFIG, SCHEMA_URI_CONFIG_DEFAULT);
 		schemaSubject = props.getOrDefault(SCHEMA_SUBJECT_CONFIG, SCHEMA_SUBJECT_CONFIG_DEFAULT);
 		purgeFlag = props.getOrDefault(PURGE_FLAG_CONFIG, PURGE_FLAG_CONFIG_DEFAULT);
-		sqsURL = props.getOrDefault(SQS_URL_CONFIG, SQS_URL_CONFIG_DEFAULT);
+		sqsURI = props.getOrDefault(SQS_URI_CONFIG, SQS_URI_CONFIG_DEFAULT);
 		sqsRegion = props.getOrDefault(SQS_REGION_CONFIG, SQS_REGION_CONFIG_DEFAULT);
 		s3Bucket = props.getOrDefault(S3_BUCKET_CONFIG, S3_BUCKET_CONFIG_DEFAULT);
 		s3Region = props.getOrDefault(S3_REGION_CONFIG, S3_REGION_CONFIG_DEFAULT);
@@ -177,7 +177,7 @@ public class UKMEETSourceConnector extends SourceConnector {
 		config.put(SCHEMA_URI_CONFIG, schemaUri);
 		config.put(SCHEMA_SUBJECT_CONFIG, schemaSubject);
 		config.put(PURGE_FLAG_CONFIG, purgeFlag);
-		config.put(SQS_URL_CONFIG, sqsURL);
+		config.put(SQS_URI_CONFIG, sqsURI);
 		config.put(SQS_REGION_CONFIG, sqsRegion);
 		config.put(S3_BUCKET_CONFIG, s3Bucket);
 		config.put(S3_REGION_CONFIG, s3Region);

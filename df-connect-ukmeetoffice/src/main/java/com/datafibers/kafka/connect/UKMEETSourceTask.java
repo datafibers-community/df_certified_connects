@@ -82,7 +82,7 @@ public class UKMEETSourceTask extends SourceTask {
     private Schema dataSchema;
 
     private AmazonSQS sqs;
-    private String sqsURL;
+    private String sqsURI;
     private Regions sqsRegion;
 
     private AmazonS3 s3client;
@@ -115,7 +115,7 @@ public class UKMEETSourceTask extends SourceTask {
                 System.getenv("AWS_ACCESS_KEY_ID"),
                 System.getenv("AWS_SECRET_ACCESS_KEY"));
 
-        sqsURL = props.get(UKMEETSourceConnector.SQS_URL_CONFIG);
+        sqsURI = props.get(UKMEETSourceConnector.SQS_URI_CONFIG);
         sqsRegion = Regions.fromName(props.get(UKMEETSourceConnector.SQS_REGION_CONFIG));
         sqs = AmazonSQSClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(awsCredentials))
@@ -151,7 +151,7 @@ public class UKMEETSourceTask extends SourceTask {
                 // Poll one target file only
                 while(true) {
                     ReceiveMessageRequest receiveMessageRequest =
-                            new ReceiveMessageRequest(sqsURL)
+                            new ReceiveMessageRequest(sqsURI)
                                     .withWaitTimeSeconds(SQS_TIME_OUT)
                                     .withMaxNumberOfMessages(SQS_MESSASGE_POLL_RATE);
 
@@ -174,6 +174,8 @@ public class UKMEETSourceTask extends SourceTask {
                         String fileLongName = msg.getString("name") + "_" +
                                 fileCreationTime + "_" + msg.getString("key");
                         String filePathName = s3DownloadDir + "/" + fileLongName;
+                        log.info("receive sqs message = " + msg.toString());
+                        log.info("sqsURL=" + sqsURI + ",s3Bucket=" + s3Bucket + ", key=" + msg.getString("key"));
                         S3Object s3object = s3client.getObject(s3Bucket, msg.getString("key"));
                         S3ObjectInputStream inputStream = s3object.getObjectContent();
 
@@ -230,7 +232,7 @@ public class UKMEETSourceTask extends SourceTask {
                             }
                         }
                         if(!purgeFlag.equalsIgnoreCase("false")) {
-                            sqs.deleteMessage(new DeleteMessageRequest(sqsURL, message.getReceiptHandle()));
+                            sqs.deleteMessage(new DeleteMessageRequest(sqsURI, message.getReceiptHandle()));
                             FileUtils.forceDelete(new File(fileLongName));
                             log.info("The message/temp file are deleted from SQS/" + s3DownloadDir);
                         }
