@@ -56,6 +56,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.ArrayFloat;
+import ucar.ma2.ArrayInt;
 import ucar.ma2.ArrayLong;
 import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFile;
@@ -186,6 +187,7 @@ public class UKMEETSourceTask extends SourceTask {
 
                         // read the target variables
                         Variable targetVar = dataFile.findVariable(fileVar);
+                        Variable realizationVar = dataFile.findVariable("realization");
                         Variable yVar = dataFile.findVariable(fileCoordY);
                         Variable xVar = dataFile.findVariable(fileCoordX);
 
@@ -197,6 +199,7 @@ public class UKMEETSourceTask extends SourceTask {
                         ArrayLong.D0 forecastTimeCoord = (ArrayLong.D0) forecastTime.read();
 
                         // Read the latitude and longitude coordinate variables into arrays
+                        ArrayInt.D1 realization = (ArrayInt.D1) realizationVar.read();
                         ArrayFloat.D1 yCoord = (ArrayFloat.D1) yVar.read();
                         ArrayFloat.D1 xCoord = (ArrayFloat.D1) xVar.read();
 
@@ -205,32 +208,36 @@ public class UKMEETSourceTask extends SourceTask {
 
                         // dimensions of the y/x array
                         List<Dimension> dimensions = dataFile.getDimensions();
+                        int rLength = dimensions.get(0).getLength();
                         int yLength = dimensions.get(1).getLength(); // index 0 is for realization
                         int xLength = dimensions.get(2).getLength();
 
                         String msgToKafka;
 
                         // iterate through the arrays, do something with the data
-                        for (int y = 0; y < yLength; y++) {
-                            for (int x = 0; x < xLength; x++) {
-                                // do something with the data
-                                msgToKafka = new JSONObject()
-                                        .put("file_prefix", filePrefix)
-                                        .put("file_name", fileLongName)
-                                        .put("file_creation", fileCreationTime)
-                                        .put(fileCoordY, yCoord.get(y))
-                                        .put(fileCoordX, xCoord.get(x))
-                                        .put("time", timeCoord.get())
-                                        .put("forecast", forecastTimeCoord.get())
-                                        .put(fileVar, target.get(0, y, x)).toString();
+                        for(int z = 0; z < 1; z++) {
+                            for (int y = 0; y < yLength; y++) {
+                                for (int x = 0; x < xLength; x++) {
+                                    // do something with the data
+                                    msgToKafka = new JSONObject()
+                                            .put("file_prefix", filePrefix)
+                                            .put("file_name", fileLongName)
+                                            .put("file_creation", fileCreationTime)
+                                            .put(fileCoordY, yCoord.get(y))
+                                            .put(fileCoordX, xCoord.get(x))
+                                            .put("time", timeCoord.get())
+                                            .put("forecast", forecastTimeCoord.get())
+                                            .put(fileVar, target.get(z, y, x)).toString();
 
-                                records.add(
-                                        new SourceRecord(offsetKey(fileLongName),
-                                        offsetValue("y=" + yLength + ", x=" + xLength), topic,
-                                        dataSchema, structDecodingFromJson(msgToKafka)));
-                                log.info("Sending Kafka message =" + msgToKafka);
+                                    records.add(
+                                            new SourceRecord(offsetKey(fileLongName),
+                                                    offsetValue("z=" + z + ", y=" + y + ", x=" + x), topic,
+                                                    dataSchema, structDecodingFromJson(msgToKafka)));
+                                    log.info("Sending Kafka message =" + msgToKafka);
+                                }
                             }
                         }
+
                         if(!purgeFlag.equalsIgnoreCase("false")) {
                             sqs.deleteMessage(new DeleteMessageRequest(sqsURI, message.getReceiptHandle()));
                             FileUtils.forceDelete(new File(fileLongName));
